@@ -45,9 +45,9 @@ trait Price
      * @return float Total amount.
      */
     public function calculateConditionTotal(
-        array $conditions = [],
         $include_cart_conditions = true,
-        $include_item_conditions = true
+        $include_item_conditions = true,
+        array $conditions = []
     ) {
 
     }
