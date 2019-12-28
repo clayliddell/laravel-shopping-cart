@@ -3,7 +3,7 @@
 namespace clayliddell\ShoppingCart;
 
 use clayliddell\ShoppingCart\Collections\{
-    CartItemCollection,
+    ItemCollection,
     CartConditionCollection
 };
 
@@ -12,7 +12,7 @@ class CartContainer
     /**
      *  Container for storing shopping cart items.
      *
-     * @var CartItemCollection
+     * @var ItemCollection
      */
     public $items;
 
@@ -26,7 +26,7 @@ class CartContainer
     public function __construct($items = [], $conditions = [])
     {
         // Initialize items container.
-        $this->items = CartItemCollection::make($items);
+        $this->items = ItemCollection::make($items);
         // Initialize conditions container.
         $this->conditions = CartConditionCollection::make($conditions);
     }
@@ -49,7 +49,7 @@ class CartContainer
      */
     public function clearItems()
     {
-        $this->items = CartItemCollection::make();
+        $this->items = ItemCollection::make();
     }
 
     /**

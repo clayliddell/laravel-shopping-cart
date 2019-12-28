@@ -34,13 +34,13 @@ class ServiceProvider extends BaseServiceProvider
             // when adding a cart for a specific session/user using
             // Cart::session($sessionKey). Session Key's must be a unique string
             // used to bind a cart to a specific user, e.g. a user ID.
-            $session_key = config('shopping_cart.default_session_key') ??
+            $session_id = config('shopping_cart.default_session_key') ??
                 'C97ROP6UDdemJu8M';
             // Create shopping cart instance.
             return new Cart(
                 $events,
                 $instance_name,
-                $session_key,
+                $session_id,
                 $connection_name,
                 config('shopping_cart')
             );

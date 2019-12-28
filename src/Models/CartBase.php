@@ -2,10 +2,12 @@
 
 namespace clayliddell\ShoppingCart\Models;
 
+use Illuminate\Database\Eloquent\Model;
+
 /**
- * Shopping cart item container.
+ * Shopping cart item base model.
  */
-class CartItemCondition extends CartItemBase
+abstract class CartBase extends Model
 {
     /**
      * DB connection name to be used for model.
@@ -19,22 +21,7 @@ class CartItemCondition extends CartItemBase
      *
      * @var array
      */
-    public static $rules = [
-        'name' => 'required|string',
-        'type' => 'required|string',
-        'value' => 'required|numeric',
-    ];
-
-    /**
-     * Attributes which are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'name',
-        'type',
-        'value',
-    ];
+    public static $rules = [];
 
     /**
      * @inheritDoc

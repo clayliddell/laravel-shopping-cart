@@ -5,25 +5,18 @@ namespace clayliddell\ShoppingCart\Models;
 /**
  * Shopping cart item container.
  */
-class CartItem extends CartItemBase
+class Item extends CartBase
 {
-    /**
-     * DB connection name to be used for model.
-     *
-     * @var string
-     */
-    protected $connection;
-
     /**
      * Shopping cart item validation rules.
      *
      * @var array
      */
     public static $rules = [
-        'session_id' => 'required|string',
-        'item_id' => 'required|string',
-        'name' => 'required|string',
-        'price' => 'required|numeric',
+        'cart_id'  => 'required|numeric',
+        'type_id'  => 'required|numeric',
+        'name'     => 'required|string',
+        'price'    => 'required|numeric',
         'quantity' => 'required|numeric|min:1',
     ];
 
@@ -33,8 +26,8 @@ class CartItem extends CartItemBase
      * @var array
      */
     protected $fillable = [
-        'session_id',
-        'item_id',
+        'cart_id',
+        'type_id',
         'name',
         'price',
         'quantity',
@@ -45,11 +38,21 @@ class CartItem extends CartItemBase
      */
     public function __construct()
     {
-        $this->connection = config('shopping_cart.connection');
+        parent::__construct();
+    }
+
+    public function cart()
+    {
+        $this->belongsTo('Models\Cart');
+    }
+
+    public function type()
+    {
+        $this->belongsTo('Model\ItemType');
     }
 
     public function condition()
     {
-        $this->hasMany('Models\CartItemCondition');
+        $this->hasMany('Models\ItemCondition');
     }
 }
