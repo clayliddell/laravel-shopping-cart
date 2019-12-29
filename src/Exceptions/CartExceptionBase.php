@@ -2,6 +2,6 @@
 
 namespace clayliddell\ShoppingCart\Exceptions;
 
-class CartSaveException extends CartExceptionBase
+abstract class CartExceptionBase extends Exception
 {
 }

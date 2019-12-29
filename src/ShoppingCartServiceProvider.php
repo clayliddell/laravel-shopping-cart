@@ -25,23 +25,23 @@ class ServiceProvider extends BaseServiceProvider
             // Initialize instance of events class.
             $events = $eventsClass ? new $eventsClass() : $app['events'];
             // Retrieve instance name for identifying dispatched events.
-            $instance_name = config('shopping_cart.default_instance_name') ??
+            $instance = config('shopping_cart.default_instance') ??
                 'cart';
             // Retrieve DB connection name for storing shopping cart items.
-            $connection_name = config('shopping_cart.connection') ??
+            $connection = config('shopping_cart.connection') ??
                 'shopping_cart';
             // Default session or cart identifier. This will be overridden when
             // when adding a cart for a specific session/user using
             // Cart::session($sessionKey). Session Key's must be a unique string
             // used to bind a cart to a specific user, e.g. a user ID.
-            $session_id = config('shopping_cart.default_session_key') ??
+            $session = config('shopping_cart.default_session_key') ??
                 'C97ROP6UDdemJu8M';
             // Create shopping cart instance.
             return new Cart(
                 $events,
-                $instance_name,
-                $session_id,
-                $connection_name,
+                $instance,
+                $session,
+                $connection,
                 config('shopping_cart')
             );
         });
@@ -62,6 +62,16 @@ class ServiceProvider extends BaseServiceProvider
                 __DIR__ . '/config/shopping_cart.php' => config_path('shopping_cart.php'),
             ], 'config');
         }
+
+        // Hook into cart condition models (CartCondition, ItemCondition) saving
+        // event.
+        ConditionBase::saving(function () {
+            // If conditions_persistent is set to false, prevent cart conditions
+            // from being saved.
+            if (!config('shopping_cart.conditions_persistent', true)) {
+                return false;
+            };
+        });
     }
 
     /**

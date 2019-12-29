@@ -10,8 +10,8 @@ class Cart extends CartBase
      * @var array
      */
     public static $rules = [
-        'session_id'    => 'required|string',
-        'instance_name' => 'required|string',
+        'session'    => 'required|string',
+        'instance' => 'required|string',
     ];
 
     /**
@@ -20,8 +20,8 @@ class Cart extends CartBase
      * @var array
      */
     protected $fillable = [
-        'session_id',
-        'instance_name',
+        'session',
+        'instance',
     ];
 
     /**
@@ -70,9 +70,9 @@ class Cart extends CartBase
      */
     public function clearItems()
     {
-        foreach ($this->items as $item) {
+        $this->items->each(function ($item) {
             $item->delete();
-        }
+        });
     }
 
     /**
@@ -82,11 +82,11 @@ class Cart extends CartBase
      */
     public function clearItemConditions()
     {
-        foreach ($this->items as $item) {
-            foreach ($item->conditions as $condition) {
+        $this->items->each(function ($item) {
+            $item->conditions->each(function ($condition) {
                 $condition->delete();
-            }
-        }
+            });
+        });
     }
 
     /**
@@ -96,8 +96,8 @@ class Cart extends CartBase
      */
     public function clearConditions()
     {
-        foreach ($this->conditions as $condition) {
+        $this->conditions->each(function ($condition) {
             $condition->delete();
-        }
+        });
     }
 }
