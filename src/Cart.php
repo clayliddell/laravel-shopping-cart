@@ -362,6 +362,16 @@ class Cart implements ArrayAccess, Arrayable
     }
 
     /**
+     * Get the number of items in cart.
+     *
+     * @return integer
+     */
+    public function count(): int
+    {
+        return $this->items->count();
+    }
+
+    /**
      * Remove all items and conditions from cart.
      *
      * @return void
