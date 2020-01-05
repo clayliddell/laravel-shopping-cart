@@ -26,42 +26,42 @@ class Cart implements ArrayAccess, Arrayable
      *
      * @var Dispatcher
      */
-    protected $events;
+    protected Dispatcher $events;
 
     /**
      * Cart instance name.
      *
      * @var string
      */
-    protected $instance;
+    protected string $instance;
 
     /**
      * Cart session.
      *
      * @var string
      */
-    protected $session;
+    protected string $session;
 
     /**
      * Config for shopping cart.
      *
      * @var array
      */
-    protected $config;
+    protected array $config;
 
     /**
      * DB connection name.
      *
      * @var string
      */
-    protected $connection;
+    protected string $connection;
 
     /**
      * Cart container.
      *
      * @var CartContainer
      */
-    protected $cart;
+    protected CartContainer $cart;
 
     /**
      * @inheritDoc

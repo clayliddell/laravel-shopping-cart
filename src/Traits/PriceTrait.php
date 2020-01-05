@@ -2,24 +2,30 @@
 
 namespace clayliddell\ShoppingCart\Traits;
 
+/**
+ * Shopping cart price calculation implementation.
+ */
 trait Price
 {
-    protected $cart;
+    /**
+     * Cart container.
+     *
+     * @var CartContainer
+     */
+    protected CartContainer $cart;
 
     /**
      * Calculate tax of the current shopping cart's content.
      *
      * @return float
      */
-    public function calculateTax(float $subtotal = 0): float
+    public function calculateTax(?float $subtotal = null): float
     {
-        if (!$subtotal) {
-            $subtotal = $this->calculateSubtotal();
-        }
+        $subtotal ??= $this->calculateSubtotal();
 
-        // TODO: Determine whether there can be multiple tax conditions and
-        // how that should be handled.
-        $tax = array_sum($this->cart->conditions->where('type', 'tax')->pluck('value'));
+        // Calculate sum of all tax condition decimal values.
+        $tax = array_sum($this->cart->conditions->where('type', 'tax')
+            ->pluck('value')->all());
 
         return $subtotal * $tax;
     }
@@ -99,7 +105,7 @@ trait Price
     ) {
         // If condition type names have been provided, retrieve the ids for the
         // specified types.
-        $types = !empty($types) ? ConditionTypes::whereIn('type', $types)->pluck('id') : [];
+        $types = $types ?: ConditionTypes::whereIn('type', $types)->pluck('id');
         // Initialize condition total to 0.
         $total = 0;
         // If told to include cart conditions in the conditions total, loop
