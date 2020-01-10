@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart;
+namespace clayliddell\ShoppingCart\Models;
 
 class Cart extends CartBase
 {
