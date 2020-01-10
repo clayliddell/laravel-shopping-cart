@@ -3,6 +3,7 @@
 namespace clayliddell\ShoppingCart;
 
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
+use clayliddell\ShoppingCart\Models\ConditionBase;
 
 /**
  * Service provider for shopping cart package.
