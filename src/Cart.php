@@ -137,12 +137,12 @@ class Cart implements ArrayAccess, Arrayable
      * @return string|Cart
      */
     public function instance(
-        ?string $instance = null,
+        string $instance = '',
         bool $preserve_items = false,
         ?string $session = null
     ) {
         // If an instance is provided, set the instance
-        if (!isset($instance)) {
+        if (!empty($instance)) {
             return $this->getInstance();
         } else {
             return $this->setInstance($instance, $preserve_items, $session);
