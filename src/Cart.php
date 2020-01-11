@@ -43,20 +43,6 @@ class Cart implements ArrayAccess, Arrayable
     protected string $session;
 
     /**
-     * Config for shopping cart.
-     *
-     * @var array
-     */
-    protected array $config;
-
-    /**
-     * DB connection name.
-     *
-     * @var string
-     */
-    protected string $connection;
-
-    /**
      * Cart container.
      *
      * @var CartContainer
@@ -66,28 +52,38 @@ class Cart implements ArrayAccess, Arrayable
     /**
      * @inheritDoc
      *
-     * @param Dispatcher $events        Event dispatcher.
-     * @param string     $instance Cart instance name.
+     * @param string     $instance      Cart instance name.
      * @param string     $session       Session ID.
-     * @param string     $connection    DB connection name.
-     * @param array      $config        Cart config.
+     * @param Dispatcher $events        Event dispatcher.
      */
     public function __construct(
-        Dispatcher $events,
         string $instance,
         string $session,
-        string $connection,
-        array $config
+        Dispatcher $events
     ) {
         // Initialize cart object.
-        $this->events = $events;
         $this->instance = $instance;
         $this->session = $session;
-        $this->connection = $connection;
-        $this->config = $config;
+        $this->events = $events;
         $this->cart = $this->getCartContent();
         // Dispatch 'constructed' event.
         $this->fireEvent('constructed', $this);
+    }
+
+    /**
+     * Create a new cart instance with the porivded details.
+     *
+     * @param  string          $instance   Cart instance name.
+     * @param  string          $session    Session ID.
+     * @param  Dispatcher|null $events     Event dispatcher.
+     * @return self
+     */
+    public function make(
+        string $instance,
+        string $session,
+        ?Dispatcher $events = null
+    ): self {
+        return new static($instance, $session, $events ?? $this->events);
     }
 
     /**

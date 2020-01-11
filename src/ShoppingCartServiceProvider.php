@@ -28,9 +28,6 @@ class ServiceProvider extends BaseServiceProvider
             // Retrieve instance name for identifying dispatched events.
             $instance = config('shopping_cart.default_instance') ??
                 'cart';
-            // Retrieve DB connection name for storing shopping cart items.
-            $connection = config('shopping_cart.connection') ??
-                'shopping_cart';
             // Default session or cart identifier. This will be overridden when
             // when adding a cart for a specific session/user using
             // Cart::session($session). Session's must be a unique string
@@ -39,10 +36,9 @@ class ServiceProvider extends BaseServiceProvider
                 'C97ROP6UDdemJu8M';
             // Create shopping cart instance.
             return new Cart(
-                $events,
                 $instance,
                 $session,
-                $connection,
+                $events,
                 config('shopping_cart')
             );
         });
