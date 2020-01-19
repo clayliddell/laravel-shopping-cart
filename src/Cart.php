@@ -5,7 +5,7 @@ namespace clayliddell\ShoppingCart;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Contracts\Support\Arrayable;
 use clayliddell\ShoppingCart\Validation\CartValidator;
-use clayliddell\ShoppingCart\Models\{
+use clayliddell\ShoppingCart\Database\Models\{
     Item,
     CartCondition,
     Cart as CartContainer,
@@ -13,13 +13,14 @@ use clayliddell\ShoppingCart\Models\{
 use clayliddell\ShoppingCart\Exceptions\{
     ItemValidationException,
     CartConditionValidationException,
+    CartOffsetSetDisallowed,
     CartSaveException,
 };
 
 /**
  * Shopping cart implementation.
  */
-class Cart implements ArrayAccess, Arrayable
+class Cart implements \ArrayAccess, Arrayable
 {
     /**
      * Event Dispatcher.
@@ -65,23 +66,23 @@ class Cart implements ArrayAccess, Arrayable
         $this->instance = $instance;
         $this->session = $session;
         $this->events = $events;
-        $this->cart = $this->getCartContent();
+        $this->initializeCart();
         // Dispatch 'constructed' event.
         $this->fireEvent('constructed', $this);
     }
 
     /**
-     * Create a new cart instance with the porivded details.
+     * Create a new cart instance with the provided details.
      *
-     * @param  string          $instance   Cart instance name.
-     * @param  string          $session    Session ID.
-     * @param  Dispatcher|null $events     Event dispatcher.
+     * @param  string          $instance Cart instance name.
+     * @param  string          $session  Session ID.
+     * @param  Dispatcher|null $events   Event dispatcher.
      * @return self
      */
     public function make(
         string $instance,
         string $session,
-        ?Dispatcher $events = null
+        Dispatcher $events = null
     ): self {
         return new static($instance, $session, $events ?? $this->events);
     }
@@ -89,10 +90,10 @@ class Cart implements ArrayAccess, Arrayable
     /**
      * Determine if an item exists at a given offset.
      *
-     * @param  int $id Item id.
+     * @param  mixed $id Item id.
      * @return bool
      */
-    public function offsetExists(int $id): bool
+    public function offsetExists($id): bool
     {
         return isset($this->cart->items[$id]);
     }
@@ -100,10 +101,10 @@ class Cart implements ArrayAccess, Arrayable
     /**
      * Delete the item at a given offset.
      *
-     * @param  int  $id Item id.
+     * @param  mixed  $id Item id.
      * @return void
      */
-    public function offsetUnset(int $id): void
+    public function offsetUnset($id): void
     {
         $this->removeItem($id);
     }
@@ -111,12 +112,24 @@ class Cart implements ArrayAccess, Arrayable
     /**
      * Get the item at a given offset.
      *
-     * @param  int $id Item id.
+     * @param  mixed $id Item id.
      * @return Item|null
      */
-    public function offsetGet(int $id): ?Item
+    public function offsetGet($id)
     {
         return $this->cart->items[$id] ?? null;
+    }
+
+    /**
+     * Disallow usage of `ArrayAccess::offsetSet()` method.
+     *
+     * @param mixed $id
+     * @param mixed $val
+     * @return void
+     */
+    public function offsetSet($id, $val): void
+    {
+        throw new CartOffsetSetDisallowed("Usage of the ArrayAccess::offsetSet() is not allowed.");
     }
 
     /**
@@ -132,20 +145,21 @@ class Cart implements ArrayAccess, Arrayable
     /**
      * Get the current cart instance or change to the specified cart instance.
      *
-     * @param  string|null $instance
+     * @param  string      $instance
+     * @param  bool        $preserve_items
      * @param  string|null $session
      * @return string|Cart
      */
     public function instance(
         string $instance = '',
         bool $preserve_items = false,
-        ?string $session = null
+        string $session = null
     ) {
         // If an instance is provided, set the instance
         if (!empty($instance)) {
-            return $this->getInstance();
-        } else {
             return $this->setInstance($instance, $preserve_items, $session);
+        } else {
+            return $this->getInstance();
         }
     }
 
@@ -155,7 +169,7 @@ class Cart implements ArrayAccess, Arrayable
      * @param  string|null $session
      * @return array
      */
-    public function instances(?string $session = null): array
+    public function instances(string $session = null): array
     {
         return CartContainer::where('session', $session ?? $this->getSession())
             ->pluck('instance');
@@ -168,18 +182,29 @@ class Cart implements ArrayAccess, Arrayable
      */
     public function getCartContent(): CartContainer
     {
-        // Ensure that the cart has been initialized, and is a CartContainer.
-        if (!$this->cart instanceof CartContainer) {
-            // If the cart has yet to be initialized; initialize cart as a
-            // CartContainer with the cart items associated with the current
-            // session and same instance name provided (or create a new
-            // CartContainer).
-            $this->cart = CartContainer::where('session', $this->getSession())
-                ->where('instance', $this->getInstance())
-                ->first() ?? new CartContainer();
-        }
-        // Return cart collection.
-        return $this->cart;
+        // Ensure that the cart has been initialized, and is a CartContainer
+        //before returning cart collection.
+        return $this->cart instanceof CartContainer ? $this->cart : $this->initializeCart();
+    }
+
+    /**
+     * Initialize instance of `CartContainer`.
+     *
+     * Create new instance of `CartContainer` if one does not already exist,
+     * otherwise return existing instance.
+     *
+     * @param string $instance
+     * @param string $session
+     * @return CartContainer
+     */
+    protected function initializeCart(string $instance = null, string $session = null): CartContainer
+    {
+        // Initialize cart as a CartContainer with the cart items associated
+        // with the current session and same instance name provided (or create a
+        // new CartContainer).
+        return $this->cart = CartContainer::where('session', $session ?? $this->getSession())
+            ->where('instance', $instance ?? $this->getInstance())
+            ->first() ?? new CartContainer();
     }
 
     /**
@@ -279,17 +304,20 @@ class Cart implements ArrayAccess, Arrayable
      * @param string $name   Condition name.
      * @param string $type   Condition type.
      * @param float  $value  Condition value.
-     * @return CartCondition Newly created condition.
+     * @return ?CartCondition Newly created condition.
      */
-    public function addCondition(string $name, string $type, float $value): CartCondition
+    public function addCondition(string $name, string $type, float $value): ?CartCondition
     {
         $condition_details = [
             'name' => $name,
             'type' => $type,
             'value' => $value,
         ];
-        // Validate shopping cart condition properties.
-        $this->validateCondition($condition_details);
+        // If shopping cart condition properties fail validation, prevent
+        // condition from being added to cart.
+        if ($this->validateCondition($condition_details)) {
+            return null;
+        }
         // Create cart condition.
         $condition = $this->createCondition($name, $type, $value);
         // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
@@ -328,9 +356,7 @@ class Cart implements ArrayAccess, Arrayable
             return;
         }
         // Delete the item(s) from cart (and database if stored).
-        $this->cart->items->find($ids)->each(function ($item) {
-            $item->delete();
-        });
+        $this->cart->items->find($ids)->each(fn ($item) => $item->delete());
         // Dispatch 'removed_items' event.
         $this->fireEvent('removed_items', $this->cart, $ids);
     }
@@ -350,9 +376,7 @@ class Cart implements ArrayAccess, Arrayable
             return;
         }
         // Delete the condition(s) from cart (and database if stored).
-        $this->cart->conditions->find($ids)->each(function ($condition) {
-            $condition->delete();
-        });
+        $this->cart->conditions->find($ids)->each(fn ($condition) => $condition->delete());
         // Dispatch 'removed_conditions' event.
         $this->fireEvent('removed_conditions', $this->cart, $ids);
     }
@@ -452,31 +476,26 @@ class Cart implements ArrayAccess, Arrayable
     protected function setInstance(
         string $instance,
         bool $preserve_items = false,
-        ?string $session = null
+        string $session = null
     ): Cart {
-        // Retrieve instance of CartContainer with provided details.
-        $cart = CartContainer::where('session', $session ?? $this->getSession())
-            ->where('instance', $instance)
-            ->first();
-
-        // Ensure an CartContainer instance exists (or throw an error).
-        if (!$cart instanceof CartContainer) {
-            throw new CartInstanceNotFoundException(
-                "No cart found with instance name '$instance'"
-            );
+        $old_cart = null;
+        // If preserve items flag is set, store old cart items for reference.
+        if ($preserve_items) {
+            $old_cart = $this->cart;
         }
 
-        // Copy/re-associate from old cart items and conditions to new cart.
-        if ($preserve_items) {
+        // Retrieve instance of CartContainer with provided details; or
+        // initialize a new cart instance.
+        $this->initializeCart($instance, $session);
+
+        // Copy/re-associate old cart items and conditions to new cart.
+        if (isset($old_cart)) {
             foreach (['items', 'conditions'] as $details) {
-                $this->cart->$details->each(function ($detail) use ($cart, $details) {
-                    $cart->$details->associate($detail);
-                });
+                $old_cart->$details->each(
+                    fn ($detail) => $this->cart->$details->associate($detail)
+                );
             }
         }
-
-        // Set and return cart collection.
-        $this->cart = $cart;
 
         // Return instance of Cart class.
         return $this;
@@ -569,22 +588,30 @@ class Cart implements ArrayAccess, Arrayable
      * Validate condition properties.
      *
      * @param  array $condition Condition properies.
-     * @return void
+     * @return bool Whether the condition passed validation.
      * @throws CartConditionValidationException
      */
-    protected function validateCondition(array $condition): void
+    protected function validateCondition(array $condition): bool
     {
+        // Initialize `$passed` used to store whether the condition passed
+        // validated.
+        $passed = true;
         // Validate shopping cart condition properties.
         $validator = CartValidator::make($condition, CartCondition::$rules);
         // Alert user if validation fails.
         if ($validator->fails()) {
-            throw new CartConditionValidationException($validator->messages()->first());
+            if (!config('shopping_cart.ignore_condition_validation', false)) {
+                throw new CartConditionValidationException($validator->messages()->first());
+            }
+            $passed = false;
         }
         // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
         // is returned, prevent shopping cart from being saved.
         if ($this->fireEvent('validating', $this->cart, $condition) === EventCodes::HALT_EXECUTION) {
-            return;
+            $passed = false;
         }
+        // Return whether the condition passed validation.
+        return $passed;
     }
 
     /**

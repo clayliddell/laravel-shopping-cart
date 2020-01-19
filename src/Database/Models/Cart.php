@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Models;
+namespace clayliddell\ShoppingCart\Database\Models;
 
 class Cart extends CartBase
 {
@@ -23,14 +23,6 @@ class Cart extends CartBase
         'session',
         'instance',
     ];
-
-    /**
-     * @inheritDoc
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Get the item associated with this condition.

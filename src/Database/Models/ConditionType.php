@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Models;
+namespace clayliddell\ShoppingCart\Database\Models;
 
 /**
  * Shopping cart condition type.
@@ -14,6 +14,7 @@ class ConditionType extends CartBase
      */
     public static $rules = [
         'type' => 'required|string',
+        'percentage' => 'required|boolean',
     ];
 
     /**
@@ -23,15 +24,8 @@ class ConditionType extends CartBase
      */
     protected $fillable = [
         'type',
+        'percentage',
     ];
-
-    /**
-     * @inheritDoc
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Get all item conditions which are of this condition type.

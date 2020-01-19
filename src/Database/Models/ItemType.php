@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Models;
+namespace clayliddell\ShoppingCart\Database\Models;
 
 /**
  * Shopping cart item type.
@@ -24,14 +24,6 @@ class ItemType extends CartBase
     protected $fillable = [
         'type',
     ];
-
-    /**
-     * @inheritDoc
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Get all conditions which are of this condition type.

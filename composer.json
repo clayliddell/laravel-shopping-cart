@@ -33,14 +33,7 @@
             "clayliddell\\ShoppingCart\\": "src"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "clayliddell\\ShoppingCart\\Tests\\": "tests"
-        },
-        "classmap": [
-            "tests/TestCase.php"
-        ]
-    },
+    "autoload-dev": {},
     "scripts": {
         "test": "phpunit"
     },
@@ -50,8 +43,11 @@
     "extra": {
         "laravel": {
             "providers": [
-                "clayliddell\\ShoppingCart\\ServiceProvider"
-            ]
+                "clayliddell\\ShoppingCart\\ShoppingCartServiceProvider"
+            ],
+            "aliases": {
+                "ShoppingCart": "clayliddell\\ShoppingCart\\Facades\\CartFacade"
+            }
         }
     }
 }

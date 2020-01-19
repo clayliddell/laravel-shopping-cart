@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Models;
+namespace clayliddell\ShoppingCart\Database\Models;
 
 /**
  * Shopping cart item container.
@@ -31,14 +31,6 @@ abstract class ConditionBase extends CartBase
         'value',
         'stacks',
     ];
-
-    /**
-     * @inheritDoc
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Get the condition type associated with this condition.

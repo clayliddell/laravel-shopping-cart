@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Models;
+namespace clayliddell\ShoppingCart\Database\Models;
 
 /**
  * Shopping cart condition.
@@ -16,8 +16,7 @@ class CartCondition extends ConditionBase
         'cart_id'      => 'required|numeric',
         'type_id'      => 'required|numeric',
         'name'         => 'required|string',
-        'value'        => 'required|numeric|if:percentage,true,==,max:1',
-        'percentage'   => 'required|boolean',
+        'value'        => 'required|numeric',
     ];
 
     /**
@@ -26,20 +25,11 @@ class CartCondition extends ConditionBase
      * @var array
      */
     protected $fillable = [
-        'name',
-        'condition_id',
+        'cart_id',
         'type_id',
+        'name',
         'value',
-        'percentage',
     ];
-
-    /**
-     * @inheritDoc
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Get the item associated with this condition.

@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Models;
+namespace clayliddell\ShoppingCart\Database\Models;
 
 /**
  * Shopping cart item container.
@@ -32,14 +32,6 @@ class Item extends CartBase
         'price',
         'quantity',
     ];
-
-    /**
-     * @inheritDoc
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     public function cart()
     {

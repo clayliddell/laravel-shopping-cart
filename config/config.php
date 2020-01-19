@@ -11,4 +11,6 @@ return [
     'events' => null,
     // Whether to store conditions in database, or only store items.
     'conditions_persistent' => true,
+    // If set to true, invalid conditions which are applied will fail silently.
+    'ignore_condition_validation' => true,
 ];

@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Models;
+namespace clayliddell\ShoppingCart\Database\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -28,6 +28,10 @@ abstract class CartBase extends Model
      */
     public function __construct()
     {
+        // Call parent constructor.
+        parent::__construct();
+        // Set the connection to be used for this migration to whatever
+        // connection is set in the shopping cart config file.
         $this->connection = config('shopping_cart.connection');
     }
 }
