@@ -26,10 +26,10 @@ abstract class CartBase extends Model
     /**
      * @inheritDoc
      */
-    public function __construct()
+    public function __construct(array $attributes = [])
     {
         // Call parent constructor.
-        parent::__construct();
+        parent::__construct($attributes);
         // Set the connection to be used for this migration to whatever
         // connection is set in the shopping cart config file.
         $this->connection = config('shopping_cart.connection');

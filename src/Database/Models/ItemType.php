@@ -32,6 +32,6 @@ class ItemType extends CartBase
      */
     public function items()
     {
-        $this->hasMany('Model\Item');
+        return $this->hasMany(Item::class);
     }
 }

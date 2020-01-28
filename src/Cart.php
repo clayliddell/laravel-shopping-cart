@@ -23,13 +23,6 @@ use clayliddell\ShoppingCart\Exceptions\{
 class Cart implements \ArrayAccess, Arrayable
 {
     /**
-     * Event Dispatcher.
-     *
-     * @var Dispatcher
-     */
-    protected Dispatcher $events;
-
-    /**
      * Cart instance name.
      *
      * @var string
@@ -42,6 +35,20 @@ class Cart implements \ArrayAccess, Arrayable
      * @var string
      */
     protected string $session;
+
+    /**
+     * Whether to save the cart automatically on destruct.
+     *
+     * @var bool
+     */
+    protected bool $saveOnDestruct;
+
+    /**
+     * Event Dispatcher.
+     *
+     * @var Dispatcher
+     */
+    protected Dispatcher $events;
 
     /**
      * Cart container.
@@ -60,15 +67,28 @@ class Cart implements \ArrayAccess, Arrayable
     public function __construct(
         string $instance,
         string $session,
-        Dispatcher $events
+        Dispatcher $events,
+        bool $save_on_destruct = true
     ) {
         // Initialize cart object.
         $this->instance = $instance;
         $this->session = $session;
         $this->events = $events;
+        $this->saveOnDestruct = $save_on_destruct;
         $this->initializeCart();
         // Dispatch 'constructed' event.
         $this->fireEvent('constructed', $this);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function __destruct()
+    {
+        // If `$saveOnDestruct` flag is set to `true`, save the cart.
+        if ($this->saveOnDestruct) {
+            $this->cart->save();
+        }
     }
 
     /**
@@ -139,7 +159,7 @@ class Cart implements \ArrayAccess, Arrayable
      */
     public function toArray(): array
     {
-        return $this->cart->toArray();
+        return $this->cart->items->toArray();
     }
 
     /**
@@ -155,7 +175,7 @@ class Cart implements \ArrayAccess, Arrayable
         bool $preserve_items = false,
         string $session = null
     ) {
-        // If an instance is provided, set the instance
+        // If an instance is provided, set the instance.
         if (!empty($instance)) {
             return $this->setInstance($instance, $preserve_items, $session);
         } else {
@@ -199,12 +219,14 @@ class Cart implements \ArrayAccess, Arrayable
      */
     protected function initializeCart(string $instance = null, string $session = null): CartContainer
     {
+        // Retrieve instance and session for cart.
+        $instance ??= $this->getInstance();
+        $session  ??= $this->getSession();
+
         // Initialize cart as a CartContainer with the cart items associated
         // with the current session and same instance name provided (or create a
-        // new CartContainer).
-        return $this->cart = CartContainer::where('session', $session ?? $this->getSession())
-            ->where('instance', $instance ?? $this->getInstance())
-            ->first() ?? new CartContainer();
+        // new CartContainer instance).
+        return $this->cart = CartContainer::firstOrNew(compact('instance', 'session'));
     }
 
     /**
@@ -275,19 +297,14 @@ class Cart implements \ArrayAccess, Arrayable
      * @param  int    $quantity Item quantity.
      * @return Item Newly created item.
      */
-    public function addItem(string $id, string $name, float $price, int $quantity): Item
+    public function addItem(string $item_id, string $name, float $price, int $quantity): Item
     {
-        $item_details = [
-            'session' => $this->getSession(),
-            'item_id'    => $id,
-            'name'       => $name,
-            'price'      => $price,
-            'quantity'   => $quantity,
-        ];
+        // Retrieve sesssion.
+        $session = $this->getSession();
         // Validate shopping cart item properties.
-        $this->validateItem($item_details);
+        $this->validateItem(compact('session', 'item_id', 'name', 'price', 'quantity'));
         // Create cart item.
-        $item = $this->createItem($id, $name, $price, $quantity);
+        $item = $this->createItem($item_id, $name, $price, $quantity);
         // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart item from being added to cart.
         if ($this->fireEvent('adding', $item) !== EventCodes::HALT_EXECUTION) {
@@ -308,14 +325,9 @@ class Cart implements \ArrayAccess, Arrayable
      */
     public function addCondition(string $name, string $type, float $value): ?CartCondition
     {
-        $condition_details = [
-            'name' => $name,
-            'type' => $type,
-            'value' => $value,
-        ];
         // If shopping cart condition properties fail validation, prevent
         // condition from being added to cart.
-        if ($this->validateCondition($condition_details)) {
+        if ($this->validateCondition(compact('name', 'type', 'value'))) {
             return null;
         }
         // Create cart condition.

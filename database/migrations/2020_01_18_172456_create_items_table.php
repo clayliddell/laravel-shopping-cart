@@ -15,15 +15,15 @@ class CreateItemsTable extends CartMigration
     {
         Schema::connection($this->connection)->create('items', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('name');
-            $table->double('price', 8, 2);
             $table->integer('quantity');
             $table->timestamps();
 
             $table->bigInteger('cart_id')->unsigned();
             $table->foreign('cart_id')->references('id')->on('carts');
-            $table->bigInteger('type_id')->unsigned();
-            $table->foreign('type_id')->references('id')->on('item_types');
+            $table->bigInteger('sku_id')->unsigned();
+            $table->foreign('sku_id')->references('id')->on('item_skus');
+            $table->bigInteger('attributes_id')->unsigned();
+            $table->foreign('attributes_id')->references('id')->on('item_attributes');
         });
     }
 

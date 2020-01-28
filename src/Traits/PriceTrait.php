@@ -35,7 +35,7 @@ trait Price
      *
      * @return float
      */
-    public function calculateDiscountTotal()
+    public function calculateDiscounts()
     {
         $this->calculateConditionTotal(true, true, ['discount']);
     }
@@ -97,7 +97,7 @@ trait Price
      *                  which are not in the cart to include in the total.
      * @return float    Total amount.
      */
-    public function calculateConditionTotal(
+    public function calculateConditions(
         bool $include_cart_conditions = true,
         bool $include_item_conditions = true,
         array $types = [],

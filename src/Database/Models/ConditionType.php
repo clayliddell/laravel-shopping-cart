@@ -34,7 +34,7 @@ class ConditionType extends CartBase
      */
     public function itemConditions()
     {
-        $this->hasMany('Model\ItemCondition');
+        return $this->hasMany(ItemCondition::class);
     }
 
     /**
@@ -44,6 +44,6 @@ class ConditionType extends CartBase
      */
     public function cartConditions()
     {
-        $this->hasMany('Model\CartCondition');
+        return $this->hasMany(CartCondition::class);
     }
 }

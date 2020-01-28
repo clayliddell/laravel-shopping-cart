@@ -10,7 +10,7 @@ class Cart extends CartBase
      * @var array
      */
     public static $rules = [
-        'session'    => 'required|string',
+        'session'  => 'required|string',
         'instance' => 'required|string',
     ];
 
@@ -25,23 +25,33 @@ class Cart extends CartBase
     ];
 
     /**
-     * Get the item associated with this condition.
+     * Attributes to include when fetching relationship.
+     *
+     * @var array
+     */
+    protected $with = [
+        'items',
+        'conditions',
+    ];
+
+    /**
+     * Get the items associated with this cart.
      *
      * @return void
      */
     public function items()
     {
-        return $this->hasMany('Model\Item');
+        return $this->hasMany(Item::class);
     }
 
     /**
-     * Get the condition type associated with this condition.
+     * Get the conditions associated with this cart.
      *
      * @return void
      */
     public function conditions()
     {
-        return $this->hasMany('Models\CartCondition');
+        return $this->hasMany(CartCondition::class);
     }
 
     /**

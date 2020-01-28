@@ -13,11 +13,11 @@ class Item extends CartBase
      * @var array
      */
     public static $rules = [
-        'cart_id'  => 'required|numeric',
-        'type_id'  => 'required|numeric',
-        'name'     => 'required|string',
-        'price'    => 'required|numeric',
-        'quantity' => 'required|numeric|min:1',
+        'cart_id'       => 'required|numeric',
+        'sku_id'        => 'required|numeric',
+        'attributes_id' => 'numeric',
+        'name'          => 'required|string',
+        'quantity'      => 'required|numeric|min:1',
     ];
 
     /**
@@ -27,24 +27,40 @@ class Item extends CartBase
      */
     protected $fillable = [
         'cart_id',
-        'type_id',
+        'sku_id',
+        'attributes_id',
         'name',
-        'price',
         'quantity',
+    ];
+
+    /**
+     * Attributes to include when fetching relationship.
+     *
+     * @var array
+     */
+    protected $with = [
+        'sku',
+        'conditions',
+        'attributes',
     ];
 
     public function cart()
     {
-        $this->belongsTo('Models\Cart');
+        return $this->belongsTo(Cart::class);
     }
 
-    public function type()
+    public function sku()
     {
-        $this->belongsTo('Model\ItemType');
+        return $this->belongsTo(ItemSku::class);
     }
 
-    public function condition()
+    public function conditions()
     {
-        $this->hasMany('Models\ItemCondition');
+        return $this->hasMany(ItemCondition::class);
+    }
+
+    public function attributes()
+    {
+        return $this->hasOne(ItemAttributes::class);
     }
 }

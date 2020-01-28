@@ -40,6 +40,6 @@ class ItemCondition extends ConditionBase
      */
     public function item()
     {
-        return $this->belongsTo('Model\Item');
+        return $this->belongsTo(Item::class);
     }
 }

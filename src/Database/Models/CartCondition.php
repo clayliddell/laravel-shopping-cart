@@ -32,13 +32,22 @@ class CartCondition extends ConditionBase
     ];
 
     /**
+     * Attributes to include when fetching relationship.
+     *
+     * @var array
+     */
+    protected $with = [
+        'type',
+    ];
+
+    /**
      * Get the item associated with this condition.
      *
      * @return void
      */
     public function cart()
     {
-        return $this->belongsTo('Model\Cart');
+        return $this->belongsTo(Cart::class);
     }
 
     /**
@@ -48,6 +57,6 @@ class CartCondition extends ConditionBase
      */
     public function type()
     {
-        return $this->belongsTo('Model\ConditionType');
+        return $this->belongsTo(ConditionType::class);
     }
 }

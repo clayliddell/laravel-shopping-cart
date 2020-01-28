@@ -33,12 +33,21 @@ abstract class ConditionBase extends CartBase
     ];
 
     /**
+     * Attributes to include when fetching relationship.
+     *
+     * @var array
+     */
+    protected $with = [
+        'type',
+    ];
+
+    /**
      * Get the condition type associated with this condition.
      *
      * @return void
      */
     public function type()
     {
-        return $this->hasOne('Models\ConditionType');
+        return $this->hasOne(ConditionType::class);
     }
 }
