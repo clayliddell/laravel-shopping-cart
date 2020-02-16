@@ -1,0 +1,27 @@
+<?php
+
+use Carbon\Carbon;
+use clayliddell\ShoppingCart\Database\Seeds\CartSeeder;
+
+class CartItemSkusTableSeeder extends CartSeeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        $now = Carbon::now();
+        DB::connection($this->connection)->table('item_skus')->insert([
+            // [
+            //     'sku'        => 'sku',
+            //     'price'      => 10.00,
+            //     'type_id'    => 1,
+            //     'details'    => '',
+            //     'created_at' => $now,
+            //     'updated_at' => $now,
+            // ],
+        ]);
+    }
+}

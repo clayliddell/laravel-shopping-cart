@@ -22,8 +22,6 @@ class CreateItemsTable extends CartMigration
             $table->foreign('cart_id')->references('id')->on('carts');
             $table->bigInteger('sku_id')->unsigned();
             $table->foreign('sku_id')->references('id')->on('item_skus');
-            $table->bigInteger('attributes_id')->unsigned();
-            $table->foreign('attributes_id')->references('id')->on('item_attributes');
         });
     }
 

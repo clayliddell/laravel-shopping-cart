@@ -1,6 +1,11 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Database\Models;
+namespace App;
+
+use clayliddell\ShoppingCart\Database\Models\{
+    CartBase,
+    Item,
+};
 
 /**
  * Shopping cart item attributes.
@@ -15,6 +20,13 @@ class ItemAttributes extends CartBase
     public static $rules = [
         // 'field' => 'rules',
     ];
+
+    /**
+     * Shopping cart item attributes table name.
+     *
+     * @var string
+     */
+    protected $table = 'item_attributes';
 
     /**
      * Attributes which are mass assignable.

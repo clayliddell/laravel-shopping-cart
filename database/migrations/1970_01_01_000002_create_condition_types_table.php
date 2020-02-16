@@ -15,9 +15,12 @@ class CreateConditionTypesTable extends CartMigration
     {
         Schema::connection($this->connection)->create('condition_types', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('type');
-            $table->boolean('percentage');
+            $table->string('name');
+            $table->boolean('percentage')->default(false);
             $table->timestamps();
+
+            $table->bigInteger('category_id')->unsigned();
+            $table->foreign('category_id')->references('id')->on('condition_categories');
         });
     }
 

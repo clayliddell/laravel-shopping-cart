@@ -13,11 +13,10 @@ class Item extends CartBase
      * @var array
      */
     public static $rules = [
-        'cart_id'       => 'required|numeric',
-        'sku_id'        => 'required|numeric',
-        'attributes_id' => 'numeric',
-        'name'          => 'required|string',
-        'quantity'      => 'required|numeric|min:1',
+        'cart_id'       => 'required|exists:$connection.carts,id',
+        'sku_id'        => 'required|exists:$connection.item_skus,id',
+        'attributes_id' => 'nullable|exists:$connection.item_attributes,id',
+        'quantity'      => 'required|integer|min:1',
     ];
 
     /**
@@ -29,7 +28,6 @@ class Item extends CartBase
         'cart_id',
         'sku_id',
         'attributes_id',
-        'name',
         'quantity',
     ];
 
@@ -61,6 +59,7 @@ class Item extends CartBase
 
     public function attributes()
     {
-        return $this->hasOne(ItemAttributes::class);
+        $model = config('shopping_cart.cart_item_attributes_model', 'App\ItemAttributes');
+        return $this->belongsTo($model);
     }
 }

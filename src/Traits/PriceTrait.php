@@ -2,6 +2,10 @@
 
 namespace clayliddell\ShoppingCart\Traits;
 
+use clayliddell\ShoppingCart\Database\Models\Cart as CartContainer;
+use clayliddell\ShoppingCart\Database\Models\ConditionType;
+use Illuminate\Database\Eloquent\Builder;
+
 /**
  * Shopping cart price calculation implementation.
  */
@@ -21,13 +25,10 @@ trait Price
      */
     public function calculateTax(?float $subtotal = null): float
     {
-        $subtotal ??= $this->calculateSubtotal();
-
-        // Calculate sum of all tax condition decimal values.
-        $tax = array_sum($this->cart->conditions->where('type', 'tax')
-            ->pluck('value')->all());
-
-        return $subtotal * $tax;
+        return  $this->calculateConditions($subtotal, true, false, [
+            ConditionType::whereHas('category', fn (Builder $query) =>
+                $query->where('name', 'tax'))->first()->id,
+        ]);
     }
 
     /**
@@ -35,33 +36,37 @@ trait Price
      *
      * @return float
      */
-    public function calculateDiscounts()
+    public function calculateDiscounts(?float $subtotal = null): float
     {
-        $this->calculateConditionTotal(true, true, ['discount']);
+        return $this->calculateConditions($subtotal, true, true, [
+            ConditionType::where('category', fn (Builder $query) =>
+                $query->where('name', 'discount'))->first()->id,
+        ]);
     }
 
     /**
      * Calculate total with the specified condition types applied.
      *
      * @param  bool  $withConditions Whether to include conditions in subtotal.
-     * @param  array $types          Condition types to apply to total.
+     * @param  int[] $types          Ids of condition types to apply to total.
      * @return float
      */
     public function calculateSubtotal(
-        bool $withConditions = true,
+        bool $withConditions = false,
         array $types = []
-    ) {
+    ): float {
         // Initialize cart subtotal to 0.
-        $total = 0;
+        $subtotal = 0;
         // Add cart item's prices to subtotal.
         foreach ($this->cart->items as $item) {
-            $total += $item->price;
+            $subtotal += $item->sku->price;
         }
         // If any condition types have been specified which need to be included,
         // add them to the subtotal.
         if ($withConditions) {
-            $total += $this->calculateConditionTotal(true, true, $types);
+            $subtotal += $this->calculateConditions($subtotal, true, true, $types);
         }
+        return $subtotal;
     }
 
     /**
@@ -69,12 +74,33 @@ trait Price
      *
      * @return float
      */
-    public function calculateTotal()
+    public function calculateTotal(): float
     {
         // Add the cart's subtotal to it's condition total to get the total
         // amount.
-        $subtotal = $this->calculateSubtotal();
-        return $subtotal + $this->calculateTax($this->calculateSubtotal());
+        $subtotal = $this->calculateSubtotal(true);
+        return $subtotal + $this->calculateTax($subtotal);
+    }
+
+    /**
+     * Calculate shopping cart's totals.
+     *
+     * @return float[]
+     */
+    public function calculateTotals(): array
+    {
+        // Calculate the carts non-tax conditions total.
+        $conditions = $this->calculateConditions();
+        // Calculate the carts sub-total with out conditions, then add the
+        // pre-calculated conditions.
+        $subtotal = $this->calculateSubtotal() + $conditions;
+        // Calculate the carts tax total.
+        $tax = $this->calculateTax($subtotal);
+        // Calculate the carts grand total.
+        $total = $subtotal + $tax;
+
+        // Combine all of these totals into an array.
+        return compact('conditions', 'subtotal', 'tax', 'total');
     }
 
     /**
@@ -91,39 +117,49 @@ trait Price
      *                  conditions in the total.
      * @param  bool     $include_item_conditions Whether to include item
      *                  conditions in the total.
-     * @param  string[] $types Condition types to be included (Leave empty to
-     *                  include all types).
+     * @param  int[]    $types Ids of condition types to be included (Leave
+     *                  empty to include all non-tax types).
      * @param  CartCondition[] $additional_conditions Additional conditions
      *                  which are not in the cart to include in the total.
      * @return float    Total amount.
      */
     public function calculateConditions(
+        float $subtotal = null,
         bool $include_cart_conditions = true,
         bool $include_item_conditions = true,
         array $types = [],
         array $additional_conditions = []
     ) {
-        // If condition type names have been provided, retrieve the ids for the
-        // specified types.
-        $types = $types ?: ConditionTypes::whereIn('type', $types)->pluck('id');
+        $subtotal ??= $this->calculateSubtotal();
         // Initialize condition total to 0.
-        $total = 0;
+        $condition_total = 0;
         // If told to include cart conditions in the conditions total, loop
         // through all cart level conditions and add them to the cart.
         if ($include_cart_conditions) {
+            // Get all condition types of the tax category.
+            $tax_types = ConditionType::whereHas('category', fn (Builder $q) =>
+                $q->where('name', 'tax'))->pluck('id')->toArray();
+            dump($tax_types);
+            dump($this->cart->conditions);
             foreach ($this->cart->conditions as $condition) {
-                // Get id of tax condition type.
-                $tax_type_id = ConditionTypes::where('type', 'tax')->first()->id;
                 // If condition types have been specified, ensure that only
                 // conditions of these condition types are added to the
                 // condition total. Otherwise, allow conditions of all types
                 // except tax conditions.
                 if (
-                    (empty($types) && $condition->type->id != $tax_type_id) ||
+                    (empty($types) && !in_array($condition->type->id, $tax_types, true)) ||
                     in_array($condition->type->id, $types, true)
                 ) {
-                    // Add condition amount to conditions total.
-                    $total += $condition->amount;
+                    dump([
+                        $subtotal,
+                        $condition->value,
+                        'reached']);
+                    // If the condition is a percentage based condition,
+                    // multiply the subtotal by the conditions percentage in
+                    // order to determine the conditions values.
+                    // Otherwise just add the condition's total.
+                    $condition_total += $condition->type->percentage ?
+                        $subtotal * $condition->value : $condition->value;
                 }
             }
         }
@@ -139,7 +175,10 @@ trait Price
                         // If the condition stacks, apply the condition for each
                         // item in the cart.
                         $quantity = $condition->stacks ? $item->quantity : 1;
-                        $total += $condition->amount * $quantity;
+                        $condition_value = $condition->value * $quantity;
+                        $condition_total += $condition->type->percentage ?
+                            $item->sku->price * $condition_value :
+                            $condition->value;
                     }
                 }
             }
@@ -147,8 +186,9 @@ trait Price
         // If additional conditions are supplied, add them to the condition
         // total.
         foreach ($additional_conditions as $condition) {
-            $total += $condition->amount;
+            $condition_total += $condition->value;
         }
-        return $total;
+        dump($condition_total);
+        return $condition_total;
     }
 }

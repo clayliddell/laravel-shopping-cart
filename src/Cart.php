@@ -2,12 +2,12 @@
 
 namespace clayliddell\ShoppingCart;
 
-use Illuminate\Events\Dispatcher;
 use Illuminate\Contracts\Support\Arrayable;
-use clayliddell\ShoppingCart\Validation\CartValidator;
+use Illuminate\Events\Dispatcher;
 use clayliddell\ShoppingCart\Database\Models\{
     Item,
     CartCondition,
+    ConditionType,
     Cart as CartContainer,
 };
 use clayliddell\ShoppingCart\Exceptions\{
@@ -16,12 +16,19 @@ use clayliddell\ShoppingCart\Exceptions\{
     CartOffsetSetDisallowed,
     CartSaveException,
 };
+use clayliddell\ShoppingCart\Traits\Price;
+use clayliddell\ShoppingCart\Validation\CartValidator;
 
 /**
  * Shopping cart implementation.
  */
 class Cart implements \ArrayAccess, Arrayable
 {
+    /**
+     * Use price trait.
+     */
+    use Price;
+
     /**
      * Cart instance name.
      *
@@ -159,7 +166,10 @@ class Cart implements \ArrayAccess, Arrayable
      */
     public function toArray(): array
     {
-        return $this->cart->items->toArray();
+        return [
+            'items' => $this->cart->items->toArray(),
+            'conditions' => $this->cart->conditions->toArray(),
+        ];
     }
 
     /**
@@ -213,20 +223,19 @@ class Cart implements \ArrayAccess, Arrayable
      * Create new instance of `CartContainer` if one does not already exist,
      * otherwise return existing instance.
      *
-     * @param string $instance
-     * @param string $session
+     * @param  string $instance
+     * @param  string $session
      * @return CartContainer
      */
     protected function initializeCart(string $instance = null, string $session = null): CartContainer
     {
-        // Retrieve instance and session for cart.
-        $instance ??= $this->getInstance();
-        $session  ??= $this->getSession();
-
         // Initialize cart as a CartContainer with the cart items associated
         // with the current session and same instance name provided (or create a
         // new CartContainer instance).
-        return $this->cart = CartContainer::firstOrNew(compact('instance', 'session'));
+        return $this->cart = CartContainer::firstOrNew([
+            'instance' => $instance ?? $this->getInstance(),
+            'session'  => $session  ?? $this->getSession()
+        ]);
     }
 
     /**
@@ -277,39 +286,44 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Alias for `addItem` method.
      *
-     * @param  string  $id
-     * @param  string  $name
-     * @param  float   $price
+     * @param  int     $sku_id
      * @param  integer $quantity
+     * @param  array   $attr
      * @return Item
      */
-    public function add(string $id, string $name, float $price, int $quantity): Item
+    public function add(int $sku_id, int $quantity, ?array $attr): Item
     {
-        return $this->addItem($id, $name, $price, $quantity);
+        return $this->addItem($sku_id, $quantity, $attr);
     }
 
     /**
      * Create shopping cart item and add it to shopping cart storage.
      *
-     * @param  string $id Item id.
-     * @param  string $name Item name.
-     * @param  float  $price Item price.
+     * @param  int    $sku_id   Item sku.
      * @param  int    $quantity Item quantity.
-     * @return Item Newly created item.
+     * @param  array  $attr     Additional item attributes.
+     * @return Item   Newly created item.
      */
-    public function addItem(string $item_id, string $name, float $price, int $quantity): Item
+    public function addItem(int $sku_id, int $quantity, ?array $attributes): Item
     {
-        // Retrieve sesssion.
-        $session = $this->getSession();
         // Validate shopping cart item properties.
-        $this->validateItem(compact('session', 'item_id', 'name', 'price', 'quantity'));
+        $this->validateItem([
+            'session'    => $this->getSession(),
+            'cart_id'    => $this->cart->id,
+            'sku_id'     => $sku_id,
+            'quantity'   => $quantity,
+            'attributes' => $attributes,
+        ]);
+        if (isset($attributes)) {
+            $this->validateItemAttributes($attributes);
+        }
         // Create cart item.
-        $item = $this->createItem($item_id, $name, $price, $quantity);
+        $item = $this->createItem($sku_id, $quantity, $attributes);
         // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart item from being added to cart.
         if ($this->fireEvent('adding', $item) !== EventCodes::HALT_EXECUTION) {
             // Associate newly created item with cart items.
-            $this->cart->items->associate($item);
+            $this->cart->items->add($item);
         }
         // Return newly created item.
         return $item;
@@ -318,37 +332,40 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Create shopping cart condition and add it to shopping cart storage.
      *
-     * @param string $name   Condition name.
-     * @param string $type   Condition type.
-     * @param float  $value  Condition value.
-     * @return ?CartCondition Newly created condition.
+     * @param  string $name       Condition name.
+     * @param  string $type       Condition type.
+     * @param  float  $value      Condition value.
+     * @return CartCondition|null Newly created condition.
      */
     public function addCondition(string $name, string $type, float $value): ?CartCondition
     {
-        // If shopping cart condition properties fail validation, prevent
-        // condition from being added to cart.
-        if ($this->validateCondition(compact('name', 'type', 'value'))) {
-            return null;
-        }
+        $type_id = ConditionType::where('name', $type)->first()->id;
+        // Validate condition.
+        $this->validateCondition([
+            'cart_id' => $this->cart->id,
+            'type_id' => $type_id,
+            'name'    => $name,
+            'value'   => $value,
+        ]);
         // Create cart condition.
-        $condition = $this->createCondition($name, $type, $value);
+        $condition = $this->createCondition($name, $type_id, $value);
         // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart condition from being added to cart.
         if ($this->fireEvent('adding', $condition) !== EventCodes::HALT_EXECUTION) {
             // Associate newly created condition with cart.
-            $this->cart->conditions->associate($condition);
+            $this->cart->conditions->add($condition);
         }
         // Return newly created condition.
         return $condition;
     }
 
     /**
-     * Alias for `removeItem` method.
+     * Alias for `removeItem()` method.
      *
-     * @param string[] $ids
+     * @param int[] $ids
      * @return void
      */
-    public function remove(string ...$ids): void
+    public function remove(int ...$ids): void
     {
         $this->removeItem(...$ids);
     }
@@ -356,10 +373,10 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Remove item(s) from the shopping cart container.
      *
-     * @param string[] $ids Key(s) of shopping cart item(s) to be removed.
+     * @param int[] $ids Key(s) of shopping cart item(s) to be removed.
      * @return void
      */
-    public function removeItem(string ...$ids): void
+    public function removeItem(int ...$ids): void
     {
         // Dispatch 'removing_items' event before proceeding; if
         // HALT_EXECUTION code is returned, prevent shopping cart from being
@@ -367,8 +384,8 @@ class Cart implements \ArrayAccess, Arrayable
         if ($this->fireEvent('removing_items', $this->cart, $ids) === EventCodes::HALT_EXECUTION) {
             return;
         }
-        // Delete the item(s) from cart (and database if stored).
-        $this->cart->items->find($ids)->each(fn ($item) => $item->delete());
+        // Flag specified items for deletion.
+        $this->cart->items->find($ids)->each(fn ($item) => $item->delete = true);
         // Dispatch 'removed_items' event.
         $this->fireEvent('removed_items', $this->cart, $ids);
     }
@@ -504,7 +521,7 @@ class Cart implements \ArrayAccess, Arrayable
         if (isset($old_cart)) {
             foreach (['items', 'conditions'] as $details) {
                 $old_cart->$details->each(
-                    fn ($detail) => $this->cart->$details->associate($detail)
+                    fn ($detail) => $this->cart->$details->add($detail)
                 );
             }
         }
@@ -526,28 +543,34 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Create shopping cart item and add it to cart container.
      *
-     * @param  string $id Item id.
-     * @param  string $name Item name.
-     * @param  float  $price Item price.
-     * @param  int    $quantity Item quantity.
-     * @return Item   Newly created item.
+     * @param  int         $sku_id   Item sku id,
+     * @param  int         $quantity Item quantity.
+     * @param  array|null  $attr     Item attributes.
+     * @param  string|null $session  Session id.
+     * @return Item        Newly created item.
      */
     protected function createItem(
-        string $id,
-        string $name,
-        float $price,
+        int $sku_id,
         int $quantity,
+        ?array $attr,
         ?string $session = null
     ): Item {
+        // Retrieve fully qualified path to item attributes model.
+        $item_attr_model = config('shopping_cart.cart_item_attributes_model', '\App\ItemAttributes');
+        // Make and eager load item attributes model.
+        $attributes = $attr ? $item_attr_model::make($attr)->load() : null;
         // Create an item using the provided details.
-        $item = Item::create([
-            $session ?? $this->getSession(),
-            $id,
-            $name,
-            $price,
-            $quantity
-        ]);
-        // Return newly created cart item.
+        $item = Item::make([
+            'cart_id'       => $this->cart->id,
+            'session'       => $session ?? $this->getSession(),
+            'sku_id'        => $sku_id,
+            'quantity'      => $quantity,
+        ])->load();
+        // Associate attributes with item.
+        if (isset($attributes)) {
+            $item->attributes()->associate($attributes);
+        }
+
         return $item;
     }
 
@@ -561,15 +584,15 @@ class Cart implements \ArrayAccess, Arrayable
      */
     protected function createCondition(
         string $name,
-        string $type,
+        int $type_id,
         float $value
     ): CartCondition {
         // Create a condition using the provided details.
-        $condition = CartCondition::create([
-            $name,
-            $type,
-            $value
-        ]);
+        $condition = CartCondition::make([
+            'name'    => $name,
+            'type_id' => $type_id,
+            'value'   => $value
+        ])->load();
         // Return newly created cart condition.
         return $condition;
     }
@@ -584,7 +607,7 @@ class Cart implements \ArrayAccess, Arrayable
     protected function validateItem(array $item): void
     {
         // Validate shopping cart item properties.
-        $validator = CartValidator::make($item, Item::$rules);
+        $validator = CartValidator::make($item, Item::rules());
         // Alert user if validation fails.
         if ($validator->fails()) {
             throw new ItemValidationException($validator->messages()->first());
@@ -592,6 +615,30 @@ class Cart implements \ArrayAccess, Arrayable
         // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
         // is returned, prevent shopping cart from being saved.
         if ($this->fireEvent('validating', $this->cart, $item) === EventCodes::HALT_EXECUTION) {
+            return;
+        }
+    }
+
+    /**
+     * Validate item attributes properties.
+     *
+     * @param  array $attr Item attributes properies.
+     * @return void
+     * @throws ItemValidationException
+     */
+    protected function validateItemAttributes(array $attr): void
+    {
+        // Retrieve fully qualified path to item attributes model.
+        $item_attr_model = config('shopping_cart.cart_item_attributes_model', '\App\ItemAttributes');
+        // Validate shopping cart item properties.
+        $validator = CartValidator::make($attr, $item_attr_model::rules());
+        // Alert user if validation fails.
+        if ($validator->fails()) {
+            throw new ItemValidationException($validator->messages()->first());
+        }
+        // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
+        // is returned, prevent shopping cart from being saved.
+        if ($this->fireEvent('validating', $this->cart, $attr) === EventCodes::HALT_EXECUTION) {
             return;
         }
     }
@@ -605,22 +652,32 @@ class Cart implements \ArrayAccess, Arrayable
      */
     protected function validateCondition(array $condition): bool
     {
-        // Initialize `$passed` used to store whether the condition passed
-        // validated.
+        // Initialize condition validation success flag.
         $passed = true;
+        // Initialize validation failure message.
+        $message = '';
         // Validate shopping cart condition properties.
-        $validator = CartValidator::make($condition, CartCondition::$rules);
-        // Alert user if validation fails.
+        $validator = CartValidator::make($condition, CartCondition::rules());
+
+        // Attempt to validate condition.
         if ($validator->fails()) {
-            if (!config('shopping_cart.ignore_condition_validation', false)) {
-                throw new CartConditionValidationException($validator->messages()->first());
+            $message = $validator->messages()->first();
+            $passed = false;
+        } else {
+            $type = ConditionType::where('id', $condition['type_id'])->first();
+            $val = (float) $condition['value'];
+            if ($type->percentage && ($val > 1 || $val < 0)) {
+                $passed = false;
+                $message = 'Conditions with a percentage type must have a decimal value between 0 and 1.';
+            // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
+            // is returned, prevent shopping cart from being saved.
+            } elseif ($this->fireEvent('validating', $this->cart, $condition) === EventCodes::HALT_EXECUTION) {
+                $passed = false;
             }
-            $passed = false;
         }
-        // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
-        // is returned, prevent shopping cart from being saved.
-        if ($this->fireEvent('validating', $this->cart, $condition) === EventCodes::HALT_EXECUTION) {
-            $passed = false;
+        // Alert user if validation failed.
+        if (!$passed) {
+            throw new CartConditionValidationException($message);
         }
         // Return whether the condition passed validation.
         return $passed;
@@ -632,7 +689,7 @@ class Cart implements \ArrayAccess, Arrayable
      * @return void
      * @throws CartSaveException
      */
-    protected function save(): void
+    public function save(): void
     {
         // Dispatch 'saving' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart from being saved.
@@ -643,8 +700,53 @@ class Cart implements \ArrayAccess, Arrayable
             // Create a transaction for the shopping cart connection so that all
             // items and conditions will be updated on a successful save
             // attempt, or none will be saved on a failure of even one.
-            $this->cart->saveOrFail();
-        } catch (Exception $original_exception) {
+            $this->cart->getConnection()->transaction(function () {
+                // Save cart model.
+                $this->cart->save();
+                // Save cart conditions.
+                $this->cart->conditions->each(function ($condition) {
+                    // If the condition is flagged to be deleted, delete it.
+                    if ($condition->delete) {
+                        $condition->delete();
+                    // Otherwise ensure it has the right cart id set for it.
+                    } else {
+                        $condition->cart_id = $this->cart->id;
+                        $condition->save();
+                    }
+                });
+                // Save cart items.
+                $this->cart->items->each(function ($item) {
+                    // If the item is flagged to be deleted, delete it.
+                    if ($item->delete) {
+                        $item->attributes->delete();
+                        $item->delete();
+                    // Otherwise ensure it has the right cart id set for it.
+                    } else {
+                        $item->cart_id = $this->cart->id;
+                        // If the item has attributes, save associated
+                        // attributes.
+                        if (isset($item->attributes)) {
+                            $item->attributes->save();
+                            $item->attributes_id = $item->attributes->id;
+                        }
+                        $item->save();
+                        // Save item conditions.
+                        $item->conditions->each(function ($condition) use ($item) {
+                            // If the condition is flagged to be deleted, delete
+                            // it.
+                            if ($condition->delete) {
+                                $condition->delete();
+                            // Otherwise ensure it has the right item id set for
+                            // it.
+                            } else {
+                                $condition->item_id = $item->id;
+                                $condition->save();
+                            }
+                        });
+                    }
+                });
+            });
+        } catch (\Exception $original_exception) {
             $message = 'Failed to save shopping cart items to storage.';
             throw new CartSaveException($message, 0, $original_exception);
         }

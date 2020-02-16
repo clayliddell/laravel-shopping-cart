@@ -1,10 +1,10 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Database\Migrations;
+namespace clayliddell\ShoppingCart\Database\Seeds;
 
-use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Seeder;
 
-class CartMigration extends Migration
+class CartSeeder extends Seeder
 {
     /**
      * The name of the database connection to use.

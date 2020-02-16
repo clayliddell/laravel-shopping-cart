@@ -1,0 +1,29 @@
+<?php
+
+use Carbon\Carbon;
+use clayliddell\ShoppingCart\Database\Models\ConditionCategory;
+use clayliddell\ShoppingCart\Database\Seeds\CartSeeder;
+
+class CartConditionTypesTableSeeder extends CartSeeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        $categories = ConditionCategory::all()->keyBy('name');
+        $now = Carbon::now();
+        
+        DB::connection($this->connection)->table('item_types')->insert([
+            // [
+            //     'name'        => 'condition_type_name',
+            //     'category_id' => $categories['tax']->id,
+            //     'percentage'  => true,
+            //     'created_at'  => $now,
+            //     'updated_at'  => $now,
+            // ],
+        ]);
+    }
+}

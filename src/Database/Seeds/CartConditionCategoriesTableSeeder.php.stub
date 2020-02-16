@@ -1,0 +1,28 @@
+<?php
+
+use Carbon\Carbon;
+use clayliddell\ShoppingCart\Database\Seeds\CartSeeder;
+
+class CartConditionTypesTableSeeder extends CartSeeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        $now = Carbon::now();
+        DB::connection($this->connection)->table('condition_categories')->insert([
+            [
+                'name'       => 'tax',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], [
+                'name'       => 'discount',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+    }
+}

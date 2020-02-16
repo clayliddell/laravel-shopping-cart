@@ -15,7 +15,7 @@ class CreateItemTypesTable extends CartMigration
     {
         Schema::connection($this->connection)->create('item_types', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('type');
+            $table->string('name');
             $table->timestamps();
         });
     }

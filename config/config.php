@@ -13,6 +13,6 @@ return [
     'use_user_id_for_session' => true,
     // Whether to store conditions in database, or only store items.
     'conditions_persistent' => true,
-    // If set to true, invalid conditions which are applied will fail silently.
-    'ignore_condition_validation' => true,
+    // Namespaced reference to Cart Item Attributes Model. (defaults to `App\ItemAttributes`).
+    'cart_item_attributes_model' => null,
 ];

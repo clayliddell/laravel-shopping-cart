@@ -13,9 +13,9 @@ class ItemSku extends CartBase
      * @var array
      */
     public static $rules = [
-        'sku'     => 'required|string',
+        'name'    => 'required|string',
         'price'   => 'required|numeric',
-        'type_id' => 'required|numeric',
+        'type_id' => 'required|exists:$connection.item_type,id',
     ];
 
     /**
@@ -24,9 +24,18 @@ class ItemSku extends CartBase
      * @var array
      */
     protected $fillable = [
-        'sku',
+        'name',
         'price',
         'type_id',
+    ];
+
+    /**
+     * Attributes to include when fetching relationship.
+     *
+     * @var array
+     */
+    protected $with = [
+        'type',
     ];
 
     /**

@@ -1,0 +1,24 @@
+<?php
+
+use Carbon\Carbon;
+use clayliddell\ShoppingCart\Database\Seeds\CartSeeder;
+
+class CartItemTypesTableSeeder extends CartSeeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        $now = Carbon::now();
+        DB::connection($this->connection)->table('item_types')->insert([
+            // [
+            //     'name'       => 'item_type_name',
+            //     'created_at' => $now,
+            //     'updated_at' => $now,
+            // ],
+        ]);
+    }
+}

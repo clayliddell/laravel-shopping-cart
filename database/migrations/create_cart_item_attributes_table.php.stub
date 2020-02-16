@@ -1,0 +1,45 @@
+<?php
+
+use clayliddell\ShoppingCart\Database\Migrations\CartMigration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateCartItemAttributesTable extends CartMigration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        /** Uncomment to enable a custom item attributes relationship for the items table *
+        Schema::connection($this->connection)->create('item_attributes', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            // Custom item attributes go here.
+        });
+        Schema::connection($this->connection)->table('items', function (Blueprint $table) {
+            $table->bigInteger('attributes_id')->unsigned();
+            $table->foreign('attributes_id')->references('id')->on('item_attributes');
+        });
+        /**/
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        if (Schema::connection($this->connection)->hasColumn('items', 'attributes_id')) {
+            // Remove reference on items table to allow for item attributes
+            // table to be dropped safely.
+            Schema::connection($this->connection)->table(
+                'items',
+                fn (Blueprint $table) => $table->dropForeign(['attributes_id'])
+            );
+        }
+        Schema::connection($this->connection)->dropIfExists('item_attributes');
+    }
+}

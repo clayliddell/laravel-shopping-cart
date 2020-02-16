@@ -1,0 +1,27 @@
+<?php
+
+use clayliddell\ShoppingCart\Database\Migrations\CartMigration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class SeedCart extends CartMigration
+{
+    /**
+     * Seed shopping cart tables.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        // Define list of shopping cart seeders.
+        $cart_seeders = [
+            'CartItemTypesTableSeeder',
+            'CartConditionsTypesTableSeeder',
+            'CartItemSkusTableSeeder',
+        ];
+        // Call each seeder.
+        foreach ($cart_seeders as $cart_seeder) {
+            Artisan::call( 'db:seed', [ '--class' => $cart_seeder ]);
+        }
+    }
+}

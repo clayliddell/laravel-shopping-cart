@@ -3,17 +3,19 @@
 namespace clayliddell\ShoppingCart\Database\Models;
 
 /**
- * Shopping cart item type.
+ * Shopping cart condition category.
  */
-class ItemType extends CartBase
+class ConditionCategory extends CartBase
 {
+    protected $table = 'condition_categories';
+
     /**
      * @inheritDoc validation rules.
      *
      * @var array
      */
     public static $rules = [
-        'name' => 'required|string',
+        'name'       => 'required|string',
     ];
 
     /**
@@ -26,12 +28,12 @@ class ItemType extends CartBase
     ];
 
     /**
-     * Get all conditions which are of this condition type.
+     * Get all condition types which are of this category.
      *
      * @return void
      */
-    public function items()
+    public function conditionTypes()
     {
-        return $this->hasMany(Item::class);
+        return $this->hasMany(ConditionType::class);
     }
 }

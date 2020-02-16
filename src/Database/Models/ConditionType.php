@@ -13,8 +13,9 @@ class ConditionType extends CartBase
      * @var array
      */
     public static $rules = [
-        'type' => 'required|string',
-        'percentage' => 'required|boolean',
+        'name'       => 'required|string',
+        'category'   => 'required|string',
+        'percentage' => 'nullable|boolean',
     ];
 
     /**
@@ -23,9 +24,29 @@ class ConditionType extends CartBase
      * @var array
      */
     protected $fillable = [
-        'type',
+        'name',
+        'category',
         'percentage',
     ];
+
+    /**
+     * Attributes to include when fetching relationship.
+     *
+     * @var array
+     */
+    protected $with = [
+        'category',
+    ];
+
+    /**
+     * Get category which this condition type belongs to.
+     *
+     * @return void
+     */
+    public function category()
+    {
+        return $this->belongsTo(ConditionCategory::class);
+    }
 
     /**
      * Get all item conditions which are of this condition type.

@@ -2,7 +2,7 @@
 
 namespace clayliddell\ShoppingCart\Validation;
 
-use Illuminate\Validation\Validator;
+use Illuminate\Support\Facades\Validator;
 use clayliddell\ShoppingCart\Traits\IfValidationRule;
 
 class CartValidator extends Validator

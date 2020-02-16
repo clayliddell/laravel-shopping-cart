@@ -4,7 +4,7 @@ use clayliddell\ShoppingCart\Database\Migrations\CartMigration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateItemAttributesTable extends CartMigration
+class CreateConditionCategoriesTable extends CartMigration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,9 @@ class CreateItemAttributesTable extends CartMigration
      */
     public function up()
     {
-        Schema::connection($this->connection)->create('item_attributes', function (Blueprint $table) {
+        Schema::connection($this->connection)->create('condition_categories', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('name');
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ class CreateItemAttributesTable extends CartMigration
      */
     public function down()
     {
-        Schema::connection($this->connection)->dropIfExists('item_attributes');
+        Schema::connection($this->connection)->dropIfExists('condition_categories');
     }
 }

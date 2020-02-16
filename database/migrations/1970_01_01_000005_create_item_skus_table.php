@@ -15,8 +15,9 @@ class CreateItemSkusTable extends CartMigration
     {
         Schema::connection($this->connection)->create('item_skus', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('sku');
+            $table->string('name');
             $table->double('price', 8, 2);
+            $table->string('details');
             $table->timestamps();
 
             $table->bigInteger('type_id')->unsigned();

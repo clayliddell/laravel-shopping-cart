@@ -14,8 +14,8 @@ class ItemCondition extends ConditionBase
      */
     public static $rules = [
         'name'       => 'required|string',
-        'item_id'    => 'required|numeric',
-        'type_id'    => 'required|numeric',
+        'item_id'    => 'required|exists:$connection.item,id',
+        'type_id'    => 'required|exists:$connection.item_types,id',
         'value'      => 'required|numeric',
         'stacks'     => 'boolean',
     ];

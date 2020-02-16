@@ -13,8 +13,8 @@ class CartCondition extends ConditionBase
      * @var array
      */
     public static $rules = [
-        'cart_id'      => 'required|numeric',
-        'type_id'      => 'required|numeric',
+        'cart_id'      => 'required|exists:$connection.carts,id',
+        'type_id'      => 'required|exists:$connection.condition_types,id',
         'name'         => 'required|string',
         'value'        => 'required|numeric',
     ];
