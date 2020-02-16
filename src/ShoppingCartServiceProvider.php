@@ -55,9 +55,9 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
         // Initialize cart singleton.
         $this->app->singleton('cart', function ($app) {
             // Retrieve event dispatcher class from config for handling events.
-            $eventsClass = config('shopping_cart.events');
+            $events_class = config('shopping_cart.events');
             // Initialize instance of events class.
-            $events = $eventsClass ? new $eventsClass() : $app['events'];
+            $events = $events_class ? new $events_class() : $app['events'];
             // Retrieve instance name for identifying dispatched events.
             $instance = config('shopping_cart.default_instance') ?? 'cart';
             // Determine default cart session identifier. This can be overridden
@@ -70,11 +70,14 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
             }
             $session ??= config('shopping_cart.default_session', 'C97ROP6UDdemJu8M');
 
+            $save_on_destruct = config('shopping_cart.save_on_destruct', true);
+
             // Create shopping cart instance.
             return new Cart(
                 $instance,
                 $session,
-                $events
+                $events,
+                $save_on_destruct
             );
         });
     }

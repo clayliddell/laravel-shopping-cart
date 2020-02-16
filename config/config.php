@@ -15,4 +15,6 @@ return [
     'conditions_persistent' => true,
     // Namespaced reference to Cart Item Attributes Model. (defaults to `App\ItemAttributes`).
     'cart_item_attributes_model' => null,
+    // Save cart content on cart destruct.
+    'save_cart_on_destruct' => true,
 ];
