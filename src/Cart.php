@@ -6,17 +6,14 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Events\Dispatcher;
 use clayliddell\ShoppingCart\Database\Models\{
     Item,
-    CartCondition,
-    ConditionType,
+    Condition,
     Cart as CartContainer,
 };
 use clayliddell\ShoppingCart\Exceptions\{
     ItemValidationException,
-    CartConditionValidationException,
     CartOffsetSetDisallowed,
     CartSaveException,
 };
-use clayliddell\ShoppingCart\Traits\Price;
 use clayliddell\ShoppingCart\Validation\CartValidator;
 
 /**
@@ -24,10 +21,7 @@ use clayliddell\ShoppingCart\Validation\CartValidator;
  */
 class Cart implements \ArrayAccess, Arrayable
 {
-    /**
-     * Use price trait.
-     */
-    use Price;
+    use \clayliddell\ShoppingCart\Traits\PriceTrait;
 
     /**
      * Cart instance name.
@@ -67,9 +61,13 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * @inheritDoc
      *
-     * @param string     $instance      Cart instance name.
-     * @param string     $session       Session ID.
-     * @param Dispatcher $events        Event dispatcher.
+     * @param string $instance
+     *   Cart instance name.
+     * @param string $session
+     *   Session ID.
+     *
+     * @param Dispatcher $events
+     *   Event dispatcher.
      */
     public function __construct(
         string $instance,
@@ -101,9 +99,13 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Create a new cart instance with the provided details.
      *
-     * @param  string          $instance Cart instance name.
-     * @param  string          $session  Session ID.
-     * @param  Dispatcher|null $events   Event dispatcher.
+     * @param string $instance
+     *   Cart instance name.
+     * @param string $session
+     *   Session ID.
+     * @param Dispatcher|null $events
+     *   Event dispatcher.
+     *
      * @return self
      */
     public function make(
@@ -117,7 +119,9 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Determine if an item exists at a given offset.
      *
-     * @param  mixed $id Item id.
+     * @param mixed $id
+     *   Item id.
+     *
      * @return bool
      */
     public function offsetExists($id): bool
@@ -128,7 +132,9 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Delete the item at a given offset.
      *
-     * @param  mixed  $id Item id.
+     * @param mixed  $id
+     *   Item id.
+     *
      * @return void
      */
     public function offsetUnset($id): void
@@ -139,7 +145,9 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Get the item at a given offset.
      *
-     * @param  mixed $id Item id.
+     * @param mixed $id
+     *   Item id.
+     *
      * @return Item|null
      */
     public function offsetGet($id)
@@ -152,6 +160,7 @@ class Cart implements \ArrayAccess, Arrayable
      *
      * @param mixed $id
      * @param mixed $val
+     *
      * @return void
      */
     public function offsetSet($id, $val): void
@@ -175,9 +184,10 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Get the current cart instance or change to the specified cart instance.
      *
-     * @param  string      $instance
-     * @param  bool        $preserve_items
-     * @param  string|null $session
+     * @param string $instance
+     * @param bool $preserve_items
+     * @param string|null $session
+     *
      * @return string|Cart
      */
     public function instance(
@@ -196,7 +206,8 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Get all instances associated with a cart session.
      *
-     * @param  string|null $session
+     * @param string|null $session
+     *
      * @return array
      */
     public function instances(string $session = null): array
@@ -223,8 +234,9 @@ class Cart implements \ArrayAccess, Arrayable
      * Create new instance of `CartContainer` if one does not already exist,
      * otherwise return existing instance.
      *
-     * @param  string $instance
-     * @param  string $session
+     * @param string $instance
+     * @param string $session
+     *
      * @return CartContainer
      */
     protected function initializeCart(string $instance = null, string $session = null): CartContainer
@@ -241,7 +253,9 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Check whether shopping cart has item with provided item id(s).
      *
-     * @param  string[] $ids Shopping cart item id(s).
+     * @param array<string> $ids
+     *   Shopping cart item id(s).
+     *
      * @return bool
      */
     public function has(string ...$ids): bool
@@ -252,7 +266,9 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Get shopping cart item with provided item id.
      *
-     * @param  string $id Shopping cart item id.
+     * @param string $id
+     *   Shopping cart item id.
+     *
      * @return Item|null
      */
     public function get(string $id): ?Item
@@ -264,7 +280,9 @@ class Cart implements \ArrayAccess, Arrayable
      * Check whether shopping cart has condition with provided condition
      * name(s).
      *
-     * @param  string[] $name Shopping cart condition name(s).
+     * @param array<string> $name
+     *   Shopping cart condition name(s).
+     *
      * @return bool
      */
     public function hasCondition(string ...$names): bool
@@ -275,10 +293,12 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Get shopping cart condition with provided condition name.
      *
-     * @param  string $name Shopping cart condition name.
-     * @return CartCondition|null
+     * @param string $name
+     *   Shopping cart condition name.
+     *
+     * @return Condition|null
      */
-    public function getCondition(string $name): ?CartCondition
+    public function getCondition(string $name): ?Condition
     {
         return $this->cart->conditions->where('name', $name)->first();
     }
@@ -286,9 +306,10 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Alias for `addItem` method.
      *
-     * @param  int     $sku_id
-     * @param  integer $quantity
-     * @param  array   $attr
+     * @param int $sku_id
+     * @param integer $quantity
+     * @param array $attr
+     *
      * @return Item
      */
     public function add(int $sku_id, int $quantity, ?array $attr): Item
@@ -299,10 +320,15 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Create shopping cart item and add it to shopping cart storage.
      *
-     * @param  int    $sku_id   Item sku.
-     * @param  int    $quantity Item quantity.
-     * @param  array  $attr     Additional item attributes.
-     * @return Item   Newly created item.
+     * @param int $sku_id
+     *   Item sku.
+     * @param int $quantity
+     *   Item quantity.
+     * @param array $attr
+     *   Additional item attributes.
+     *
+     * @return Item
+     *   Newly created item.
      */
     public function addItem(int $sku_id, int $quantity, ?array $attributes): Item
     {
@@ -330,28 +356,31 @@ class Cart implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Create shopping cart condition and add it to shopping cart storage.
+     * Apply shopping cart condition to cart.
      *
-     * @param  string $name       Condition name.
-     * @param  string $type       Condition type.
-     * @param  float  $value      Condition value.
-     * @return CartCondition|null Newly created condition.
+     * @param Condition $cart
+     *   Condition being applied to the cart.
+     * @param bool $validate
+     *   Whether to validate the supplied cart condition before application.
+     *
+     * @return Condition|false
+     *   Condition which was applied or false on fail.
      */
-    public function addCondition(string $name, string $type, float $value): ?CartCondition
-    {
-        $type_id = ConditionType::where('name', $type)->first()->id;
-        // Validate condition.
-        $this->validateCondition([
-            'cart_id' => $this->cart->id,
-            'type_id' => $type_id,
-            'name'    => $name,
-            'value'   => $value,
-        ]);
-        // Create cart condition.
-        $condition = $this->createCondition($name, $type_id, $value);
+    public function addCondition(
+        Condition $condition,
+        bool $validate = true
+    ) {
+        // Validate condition if necessary; in the case it fails validation,
+        // return `false`.
+        if ($validate && $condition->validate($this->cart)) {
+            $condition = false;
+        }
         // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart condition from being added to cart.
-        if ($this->fireEvent('adding', $condition) !== EventCodes::HALT_EXECUTION) {
+        if (
+            $this->fireEvent('adding', $condition) !== EventCodes::HALT_EXECUTION ||
+            $condition = false
+        ) {
             // Associate newly created condition with cart.
             $this->cart->conditions->add($condition);
         }
@@ -362,7 +391,8 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Alias for `removeItem()` method.
      *
-     * @param int[] $ids
+     * @param array<int> $ids
+     *
      * @return void
      */
     public function remove(int ...$ids): void
@@ -373,7 +403,9 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Remove item(s) from the shopping cart container.
      *
-     * @param int[] $ids Key(s) of shopping cart item(s) to be removed.
+     * @param array<int> $ids
+     *   Key(s) of shopping cart item(s) to be removed.
+     *
      * @return void
      */
     public function removeItem(int ...$ids): void
@@ -393,7 +425,9 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Remove condition(s) from the shopping cart container.
      *
-     * @param string[] $ids Id(s) of shopping cart conditions(s) to be removed.
+     * @param array<string> $ids
+     *   Id(s) of shopping cart conditions(s) to be removed.
+     *
      * @return void
      */
     public function removeCondition(string ...$ids): void
@@ -455,7 +489,7 @@ class Cart implements \ArrayAccess, Arrayable
      *
      * @return void
      */
-    public function clearConditions(): void
+    public function clearCartConditions(): void
     {
         $this->clearHelper(__FUNCTION__, EventCodes::CLEARING_CART_CONDITIONS);
     }
@@ -463,9 +497,11 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Handle all shopping cart clearing methods.
      *
-     * @var    string $clear_method CartContainer class clear method to be used.
-     * @var    int    $clear_code   Clear code used to signify what is being
-     *                cleared from cart.
+     * @param string $clear_method
+     *   CartContainer class clear method to be used.
+     * @param int $clear_code
+     *   Clear code used to signify what is being cleared from cart.
+     *
      * @return void
      */
     protected function clearHelper(string $clear_method, int $clear_code)
@@ -496,10 +532,13 @@ class Cart implements \ArrayAccess, Arrayable
      *
      * Preserve items from current cart into new one if specified to do so.
      *
-     * @param string      $instance New cart instance name.
-     * @param boolean     $preserve_items Whether to preserve items from current
-     *                    cart instance.
-     * @param string|null $session New cart instance session.
+     * @param string $instance
+     *   New cart instance name.
+     * @param boolean $preserve_items
+     *   Whether to preserve items from current cart instance.
+     * @param string|null $session
+     *   New cart instance session.
+     *
      * @return Cart
      */
     protected function setInstance(
@@ -543,11 +582,17 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Create shopping cart item and add it to cart container.
      *
-     * @param  int         $sku_id   Item sku id,
-     * @param  int         $quantity Item quantity.
-     * @param  array|null  $attr     Item attributes.
-     * @param  string|null $session  Session id.
-     * @return Item        Newly created item.
+     * @param int $sku_id
+     *   Item sku id,
+     * @param int $quantity
+     *   Item quantity.
+     * @param array|null $attr
+     *   Item attributes.
+     * @param string|null $session
+     *   Session id.
+     *
+     * @return Item
+     *   Newly created item.
      */
     protected function createItem(
         int $sku_id,
@@ -575,33 +620,13 @@ class Cart implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Create shopping cart condition and add it to cart container.
-     *
-     * @param  string $name  Condition name.
-     * @param  string $type  Condition type.
-     * @param  float  $value Condition value.
-     * @return CartCondition Newly created condition.
-     */
-    protected function createCondition(
-        string $name,
-        int $type_id,
-        float $value
-    ): CartCondition {
-        // Create a condition using the provided details.
-        $condition = CartCondition::make([
-            'name'    => $name,
-            'type_id' => $type_id,
-            'value'   => $value
-        ])->load();
-        // Return newly created cart condition.
-        return $condition;
-    }
-
-    /**
      * Validate item properties.
      *
-     * @param  array $item Item properies.
+     * @param array $item
+     *   Item properies.
+     *
      * @return void
+     *
      * @throws ItemValidationException
      */
     protected function validateItem(array $item): void
@@ -622,8 +647,11 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Validate item attributes properties.
      *
-     * @param  array $attr Item attributes properies.
+     * @param array $attr
+     *   Item attributes properies.
+     *
      * @return void
+     *
      * @throws ItemValidationException
      */
     protected function validateItemAttributes(array $attr): void
@@ -644,49 +672,10 @@ class Cart implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Validate condition properties.
-     *
-     * @param  array $condition Condition properies.
-     * @return bool Whether the condition passed validation.
-     * @throws CartConditionValidationException
-     */
-    protected function validateCondition(array $condition): bool
-    {
-        // Initialize condition validation success flag.
-        $passed = true;
-        // Initialize validation failure message.
-        $message = '';
-        // Validate shopping cart condition properties.
-        $validator = CartValidator::make($condition, CartCondition::rules());
-
-        // Attempt to validate condition.
-        if ($validator->fails()) {
-            $message = $validator->messages()->first();
-            $passed = false;
-        } else {
-            $type = ConditionType::where('id', $condition['type_id'])->first();
-            $val = (float) $condition['value'];
-            if ($type->percentage && ($val > 1 || $val < 0)) {
-                $passed = false;
-                $message = 'Conditions with a percentage type must have a decimal value between 0 and 1.';
-            // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
-            // is returned, prevent shopping cart from being saved.
-            } elseif ($this->fireEvent('validating', $this->cart, $condition) === EventCodes::HALT_EXECUTION) {
-                $passed = false;
-            }
-        }
-        // Alert user if validation failed.
-        if (!$passed) {
-            throw new CartConditionValidationException($message);
-        }
-        // Return whether the condition passed validation.
-        return $passed;
-    }
-
-    /**
      * Store changes to shopping cart collection to storage.
      *
      * @return void
+     *
      * @throws CartSaveException
      */
     public function save(): void
@@ -757,9 +746,13 @@ class Cart implements \ArrayAccess, Arrayable
     /**
      * Handle triggered events using Dispatcher provided.
      *
-     * @param  string $event Name of event being dispatched.
-     * @param  array  $payload Optional values to be dispatched with the event.
-     * @return array|null Values returned from event listeners.
+     * @param string $event
+     *   Name of event being dispatched.
+     * @param array $payload
+     *   Optional values to be dispatched with the event.
+     *
+     * @return array|null
+     *   Values returned from event listeners.
      */
     protected function fireEvent(string $eventName, ...$payload): ?array
     {

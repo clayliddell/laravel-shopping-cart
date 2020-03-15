@@ -21,6 +21,8 @@ class CartConditionTypesTableSeeder extends CartSeeder
             //     'name'        => 'condition_type_name',
             //     'category_id' => $categories['tax']->id,
             //     'percentage'  => true,
+            //     'stacks'      => false,
+            //     'value'       => 20,
             //     'created_at'  => $now,
             //     'updated_at'  => $now,
             // ],

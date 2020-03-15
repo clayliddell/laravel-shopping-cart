@@ -6,7 +6,7 @@ use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Contracts\Foundation\Application;
-use clayliddell\ShoppingCart\Database\Models\ConditionBase;
+use clayliddell\ShoppingCart\Database\Models\Condition;
 
 /**
  * Service provider for shopping cart package.
@@ -30,7 +30,8 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
     /**
      * Create a new service provider instance.
      *
-     * @param  Application $app
+     * @param Application $app
+     *
      * @return void
      */
     public function __construct(Application $app)
@@ -101,9 +102,8 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
         // If conditions_persistent is set to false, prevent cart conditions
         // from being saved.
         if (!config('shopping_cart.conditions_persistent', true)) {
-            // Hook into cart condition models (CartCondition, ItemCondition)
-            // saving event.
-            ConditionBase::saving(function () {
+            // Hook into cart condition model saving event.
+            Condition::saving(function () {
                 return false;
             });
         }

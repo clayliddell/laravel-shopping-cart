@@ -8,7 +8,7 @@ namespace clayliddell\ShoppingCart\Database\Models;
 class ItemSku extends CartBase
 {
     /**
-     * @inheritDoc validation rules.
+     * {@inheritDoc} validation rules.
      *
      * @var array
      */

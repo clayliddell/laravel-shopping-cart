@@ -1,0 +1,29 @@
+<?php
+
+use Carbon\Carbon;
+use clayliddell\ShoppingCart\Database\Models\ConditionTypes;
+use clayliddell\ShoppingCart\Database\Seeds\CartSeeder;
+
+class CartConditionValidatorsTableSeeder extends CartSeeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        $types = ConditionTypes::all()->keyBy('name');
+
+        $now = Carbon::now();
+
+        DB::connection($this->connection)->table('condition_validators')->insert([
+            // [
+            //     'type_id'    => $types['tax'],
+            //     'validator'  => 'tax_validator',
+            //     'created_at' => $now,
+            //     'updated_at' => $now,
+            // ],
+        ]);
+    }
+}

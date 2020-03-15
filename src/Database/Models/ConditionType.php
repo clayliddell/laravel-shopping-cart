@@ -8,40 +8,43 @@ namespace clayliddell\ShoppingCart\Database\Models;
 class ConditionType extends CartBase
 {
     /**
-     * @inheritDoc validation rules.
+     * {@inheritDoc} validation rules.
      *
-     * @var array
+     * @var array<string>
      */
     public static $rules = [
-        'name'       => 'required|string',
-        'category'   => 'required|string',
-        'percentage' => 'nullable|boolean',
+        'category_id' => 'required|integer',
+        'name'        => 'required|string',
+        'percentage'  => 'nullable|boolean',
+        'stacks'      => 'nullable|boolean',
+        'value'       => 'required|numeric',
     ];
 
     /**
      * Attributes which are mass assignable.
      *
-     * @var array
+     * @var array<string>
      */
     protected $fillable = [
+        'category_id',
         'name',
-        'category',
         'percentage',
+        'stacks',
+        'value',
     ];
 
     /**
      * Attributes to include when fetching relationship.
      *
-     * @var array
+     * @var array<string>
      */
     protected $with = [
         'category',
+        'validators',
     ];
 
     /**
      * Get category which this condition type belongs to.
-     *
-     * @return void
      */
     public function category()
     {
@@ -49,22 +52,10 @@ class ConditionType extends CartBase
     }
 
     /**
-     * Get all item conditions which are of this condition type.
-     *
-     * @return void
+     * Get all condition validators this condition type has.
      */
-    public function itemConditions()
+    public function validators()
     {
-        return $this->hasMany(ItemCondition::class);
-    }
-
-    /**
-     * Get all item conditions which are of this condition type.
-     *
-     * @return void
-     */
-    public function cartConditions()
-    {
-        return $this->hasMany(CartCondition::class);
+        return $this->hasMany(ConditionValidator::class, 'type_id');
     }
 }

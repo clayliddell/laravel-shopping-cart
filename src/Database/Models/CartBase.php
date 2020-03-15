@@ -19,7 +19,7 @@ abstract class CartBase extends Model
     /**
      * Shopping cart item validation rules.
      *
-     * @var array
+     * @var array<string>
      */
     public static $rules = [];
 
@@ -45,7 +45,7 @@ abstract class CartBase extends Model
     /**
      * Get formatted validation rules for model.
      *
-     * @return array
+     * @return array<string>
      */
     public static function rules()
     {
@@ -61,6 +61,7 @@ abstract class CartBase extends Model
      * Set the delete attribute.
      *
      * @param boolean $delete
+     *
      * @return void
      */
     public function setDeleteAttribute(bool $delete)
@@ -72,6 +73,7 @@ abstract class CartBase extends Model
      * Get the delete attribute.
      *
      * @param boolean $delete
+     *
      * @return void
      */
     public function getDeleteAttribute()
@@ -82,8 +84,9 @@ abstract class CartBase extends Model
     /**
      * Eager load relations on the model.
      *
-     * @param  array|string  $relations
-     * @return $this
+     * @param array|string $relations
+     *
+     * @return self
      */
     public function load($relations = [])
     {

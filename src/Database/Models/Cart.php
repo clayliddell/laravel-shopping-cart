@@ -2,12 +2,14 @@
 
 namespace clayliddell\ShoppingCart\Database\Models;
 
-class Cart extends CartBase
+use clayliddell\ShoppingCart\Database\Interfaces\HasConditions;
+
+class Cart extends CartBase implements HasConditions
 {
     /**
      * Shopping cart item validation rules.
      *
-     * @var array
+     * @var array<string>
      */
     public static $rules = [
         'session'  => 'required|string',
@@ -17,7 +19,7 @@ class Cart extends CartBase
     /**
      * Attributes which are mass assignable.
      *
-     * @var array
+     * @var array<string>
      */
     protected $fillable = [
         'session',
@@ -27,7 +29,7 @@ class Cart extends CartBase
     /**
      * Attributes to include when fetching relationship.
      *
-     * @var array
+     * @var array<string>
      */
     protected $with = [
         'items',
@@ -51,7 +53,7 @@ class Cart extends CartBase
      */
     public function conditions()
     {
-        return $this->hasMany(CartCondition::class);
+        return $this->hasMany(Condition::class);
     }
 
     /**
@@ -73,7 +75,7 @@ class Cart extends CartBase
     public function clearItems()
     {
         $this->items->each(function ($item) {
-            $item->delete();
+            $item->delete = true;
         });
     }
 
@@ -86,7 +88,7 @@ class Cart extends CartBase
     {
         $this->items->each(function ($item) {
             $item->conditions->each(function ($condition) {
-                $condition->delete();
+                $condition->delete = true;
             });
         });
     }
@@ -96,10 +98,10 @@ class Cart extends CartBase
      *
      * @return void
      */
-    public function clearConditions()
+    public function clearCartConditions()
     {
         $this->conditions->each(function ($condition) {
-            $condition->delete();
+            $condition->delete = true;
         });
     }
 }

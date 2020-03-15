@@ -2,14 +2,16 @@
 
 namespace clayliddell\ShoppingCart\Traits;
 
-use clayliddell\ShoppingCart\Database\Models\Cart as CartContainer;
-use clayliddell\ShoppingCart\Database\Models\ConditionType;
+use clayliddell\ShoppingCart\Database\Models\{
+    Cart as CartContainer,
+    ConditionType,
+};
 use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Shopping cart price calculation implementation.
  */
-trait Price
+trait PriceTrait
 {
     /**
      * Cart container.
@@ -25,10 +27,13 @@ trait Price
      */
     public function calculateTax(?float $subtotal = null): float
     {
-        return  $this->calculateConditions($subtotal, true, false, [
-            ConditionType::whereHas('category', fn (Builder $query) =>
-                $query->where('name', 'tax'))->first()->id,
-        ]);
+        // Get all condition types of the tax category.
+        $tax_types = ConditionType::whereHas(
+            'category',
+            fn (Builder $q) => $q->where('name', 'tax')
+        )->pluck('id')->toArray();
+
+        return $this->calculateConditions($subtotal, true, false, $tax_types);
     }
 
     /**
@@ -47,8 +52,11 @@ trait Price
     /**
      * Calculate total with the specified condition types applied.
      *
-     * @param  bool  $withConditions Whether to include conditions in subtotal.
-     * @param  int[] $types          Ids of condition types to apply to total.
+     * @param bool $withConditions
+     *   Whether to include conditions in subtotal.
+     * @param array<int> $types
+     *   Ids of condition types to apply to total.
+     *
      * @return float
      */
     public function calculateSubtotal(
@@ -85,7 +93,7 @@ trait Price
     /**
      * Calculate shopping cart's totals.
      *
-     * @return float[]
+     * @return array<float>
      */
     public function calculateTotals(): array
     {
@@ -107,21 +115,26 @@ trait Price
      * Calculate total of the specified condition(s) in the shopping cart.
      *
      * This total does not include tax conditions unless explicitly declared in
-     * $types.
+     * `$types`.
      * The calculation of this total can be restricted using the
      * `$include_cart_condtions` and `$include_item_conditions` flags, by
      * restricting the conditions types the total should be calculated for using
      * `$types`, and by specifying `$additional_conditions` which should be
      * applied.
-     * @param  bool     $include_cart_conditions Whether to include cart
-     *                  conditions in the total.
-     * @param  bool     $include_item_conditions Whether to include item
-     *                  conditions in the total.
-     * @param  int[]    $types Ids of condition types to be included (Leave
-     *                  empty to include all non-tax types).
-     * @param  CartCondition[] $additional_conditions Additional conditions
-     *                  which are not in the cart to include in the total.
-     * @return float    Total amount.
+     *
+     * @param bool $include_cart_conditions
+     *   Whether to include cart conditions in the total.
+     * @param bool $include_item_conditions
+     *   Whether to include item conditions in the total.
+     * @param array<int> $types
+     *   Ids of condition types to be included (Leave empty to include all
+     *   non-tax types).
+     *
+     * @param array<Condition> $additional_conditions
+     *   Additional conditions which are not in the cart to include.
+     *
+     * @return float
+     *   Total amount.
      */
     public function calculateConditions(
         float $subtotal = null,
@@ -137,10 +150,10 @@ trait Price
         // through all cart level conditions and add them to the cart.
         if ($include_cart_conditions) {
             // Get all condition types of the tax category.
-            $tax_types = ConditionType::whereHas('category', fn (Builder $q) =>
-                $q->where('name', 'tax'))->pluck('id')->toArray();
-            dump($tax_types);
-            dump($this->cart->conditions);
+            $tax_types = ConditionType::whereHas(
+                'category',
+                fn (Builder $q) => $q->where('name', 'tax')
+            )->pluck('id')->toArray();
             foreach ($this->cart->conditions as $condition) {
                 // If condition types have been specified, ensure that only
                 // conditions of these condition types are added to the
@@ -150,10 +163,6 @@ trait Price
                     (empty($types) && !in_array($condition->type->id, $tax_types, true)) ||
                     in_array($condition->type->id, $types, true)
                 ) {
-                    dump([
-                        $subtotal,
-                        $condition->value,
-                        'reached']);
                     // If the condition is a percentage based condition,
                     // multiply the subtotal by the conditions percentage in
                     // order to determine the conditions values.
@@ -188,7 +197,6 @@ trait Price
         foreach ($additional_conditions as $condition) {
             $condition_total += $condition->value;
         }
-        dump($condition_total);
         return $condition_total;
     }
 }

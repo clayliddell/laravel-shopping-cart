@@ -16,10 +16,12 @@ class CreateConditionTypesTable extends CartMigration
         Schema::connection($this->connection)->create('condition_types', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name');
+            $table->decimal('value', 8, 2);
+            $table->boolean('stacks')->default(false);
             $table->boolean('percentage')->default(false);
             $table->timestamps();
 
-            $table->bigInteger('category_id')->unsigned();
+            $table->unsignedBigInteger('category_id');
             $table->foreign('category_id')->references('id')->on('condition_categories');
         });
     }

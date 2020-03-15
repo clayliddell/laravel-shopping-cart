@@ -10,29 +10,27 @@ class ConditionCategory extends CartBase
     protected $table = 'condition_categories';
 
     /**
-     * @inheritDoc validation rules.
+     * {@inheritDoc} validation rules.
      *
-     * @var array
+     * @var array<string>
      */
     public static $rules = [
-        'name'       => 'required|string',
+        'name' => 'required|string',
     ];
 
     /**
      * Attributes which are mass assignable.
      *
-     * @var array
+     * @var array<string>
      */
     protected $fillable = [
         'name',
     ];
 
     /**
-     * Get all condition types which are of this category.
-     *
-     * @return void
+     * Get all condition types which are of this condition category.
      */
-    public function conditionTypes()
+    public function types()
     {
         return $this->hasMany(ConditionType::class);
     }
