@@ -23,7 +23,7 @@ class Condition extends CartBase
     /**
      * Attributes which are mass assignable.
      *
-     * @var array
+     * @var array<string>
      */
     protected $fillable = [
         'cart_id',
@@ -34,7 +34,7 @@ class Condition extends CartBase
     /**
      * Attributes to include when fetching relationship.
      *
-     * @var array
+     * @var array<string>
      */
     protected $with = [
         'type',
@@ -42,8 +42,6 @@ class Condition extends CartBase
 
     /**
      * Get cart which this condition belongs to.
-     *
-     * @return void
      */
     public function cart()
     {
@@ -52,8 +50,6 @@ class Condition extends CartBase
 
     /**
      * Get item which this condition belongs to.
-     *
-     * @return void
      */
     public function item()
     {
@@ -62,8 +58,6 @@ class Condition extends CartBase
 
     /**
      * Get type which this condition belongs to.
-     *
-     * @return void
      */
     public function type()
     {

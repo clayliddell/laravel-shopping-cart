@@ -43,10 +43,13 @@ trait PriceTrait
      */
     public function calculateDiscounts(?float $subtotal = null): float
     {
-        return $this->calculateConditions($subtotal, true, true, [
-            ConditionType::where('category', fn (Builder $query) =>
-                $query->where('name', 'discount'))->first()->id,
-        ]);
+        // Get all condition types of the discount category.
+        $discount_types = ConditionType::whereHas(
+            'category',
+            fn (Builder $q) => $q->where('name', 'discount')
+        )->pluck('id')->toArray();
+
+        return $this->calculateConditions($subtotal, true, false, $discount_types);
     }
 
     /**

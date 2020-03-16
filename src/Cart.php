@@ -65,9 +65,10 @@ class Cart implements \ArrayAccess, Arrayable
      *   Cart instance name.
      * @param string $session
      *   Session ID.
-     *
      * @param Dispatcher $events
      *   Event dispatcher.
+     * @param bool $save_on_destruct
+     *   Whether to save items in cart upon destruct.
      */
     public function __construct(
         string $instance,
@@ -212,8 +213,8 @@ class Cart implements \ArrayAccess, Arrayable
      */
     public function instances(string $session = null): array
     {
-        return CartContainer::where('session', $session ?? $this->getSession())
-            ->pluck('instance');
+        $session ??= $this->getSession();
+        return CartContainer::where('session', $session)->pluck('instance');
     }
 
     /**
@@ -389,6 +390,25 @@ class Cart implements \ArrayAccess, Arrayable
     }
 
     /**
+     * Process items in cart and add appropriate conditions.
+     *
+     * @return void
+     */
+    public function addConditions()
+    {
+        // Iterate over all cart conditions, checking whether they should be
+        // applied to the cart or its items.
+        Condition::all()->each(function ($condition) {
+            // Add conditions to the cart if the condition's requirements are
+            // met.
+            $this->addCondition($condition);
+            // Add conditions to items which fulfill the conditions
+            // requirements.
+            $this->items->each(fn ($item) => $item->addCondition($condition));
+        });
+    }
+
+    /**
      * Alias for `removeItem()` method.
      *
      * @param array<int> $ids
@@ -546,27 +566,25 @@ class Cart implements \ArrayAccess, Arrayable
         bool $preserve_items = false,
         string $session = null
     ): Cart {
-        $old_cart = null;
-        // If preserve items flag is set, store old cart items for reference.
-        if ($preserve_items) {
-            $old_cart = $this->cart;
-        }
-
-        // Retrieve instance of CartContainer with provided details; or
-        // initialize a new cart instance.
-        $this->initializeCart($instance, $session);
+        // Retrieve new cart with supplied instance and session.
+        $new_cart = new self(
+            $instance,
+            $session ?? $this->session,
+            $this->events,
+            $this->saveOnDestruct
+        );
 
         // Copy/re-associate old cart items and conditions to new cart.
-        if (isset($old_cart)) {
+        if ($preserve_items) {
             foreach (['items', 'conditions'] as $details) {
-                $old_cart->$details->each(
-                    fn ($detail) => $this->cart->$details->add($detail)
+                $this->cart->$details->each(
+                    fn ($detail) => $new_cart->$details->add($detail)
                 );
             }
         }
 
-        // Return instance of Cart class.
-        return $this;
+        // Return new Cart instance.
+        return $new_cart;
     }
 
     /**
@@ -760,5 +778,17 @@ class Cart implements \ArrayAccess, Arrayable
             $this->getInstance() . '.' . $eventName,
             $payload
         );
+    }
+
+    /**
+     * Pass requests to properties to underlying cart container.
+     *
+     * @param mixed $prop
+     *
+     * @return mixed
+     */
+    public function __get($prop)
+    {
+        return $this->cart->$prop;
     }
 }
