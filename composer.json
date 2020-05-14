@@ -1,5 +1,5 @@
 {
-    "name": "clayliddell/shoppingcart",
+    "name": "clayliddell/laravel-shopping-cart",
     "description": "Shopping Cart implementation for Laravel 5 & 6.",
     "license": "MIT",
     "type": "laravel",
