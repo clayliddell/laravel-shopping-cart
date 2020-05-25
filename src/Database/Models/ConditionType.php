@@ -2,6 +2,8 @@
 
 namespace clayliddell\ShoppingCart\Database\Models;
 
+use clayliddell\ShoppingCart\Database\Interfaces\HasConditions;
+
 /**
  * Shopping cart condition type.
  */
@@ -57,5 +59,24 @@ class ConditionType extends CartBase
     public function validators()
     {
         return $this->hasMany(ConditionValidator::class, 'type_id');
+    }
+
+    /**
+     * Evaluate whether this condition type is applicable to supplied entity.
+     *
+     * @param HasConditions $cartEntity
+     *   Cart entity being validated; must be condition-able.
+     *
+     * @return bool
+     *   Whether the cart entity passed validation.
+     */
+    public function validate(HasConditions $cartEntity): bool
+    {
+        // Iterate through each of this condition type's validation rules and
+        // ensure the current cart entity meets the requirements.
+        return $this->validators->reduce(
+            fn ($success, $validator) => $success && $validator->validate($cartEntity),
+            true
+        );
     }
 }

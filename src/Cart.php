@@ -7,6 +7,7 @@ use Illuminate\Events\Dispatcher;
 use clayliddell\ShoppingCart\Database\Models\{
     Item,
     Condition,
+    ConditionType,
     Cart as CartContainer,
 };
 use clayliddell\ShoppingCart\Exceptions\{
@@ -15,13 +16,14 @@ use clayliddell\ShoppingCart\Exceptions\{
     CartSaveException,
 };
 use clayliddell\ShoppingCart\Validation\CartValidator;
+use clayliddell\ShoppingCart\Traits\PriceTrait;
 
 /**
  * Shopping cart implementation.
  */
 class Cart implements \ArrayAccess, Arrayable
 {
-    use \clayliddell\ShoppingCart\Traits\PriceTrait;
+    use PriceTrait;
 
     /**
      * Cart instance name.
@@ -348,8 +350,9 @@ class Cart implements \ArrayAccess, Arrayable
         $item = $this->createItem($sku_id, $quantity, $attributes);
         // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart item from being added to cart.
-        if ($this->fireEvent('adding', $item) !== EventCodes::HALT_EXECUTION) {
-            // Associate newly created item with cart items.
+        if ($this->fireEvent('adding_item', $item) !== EventCodes::HALT_EXECUTION) {
+            // Associate the newly created item with the cart.
+            $item->cart = $this->cart;
             $this->cart->items->add($item);
         }
         // Return newly created item.
@@ -357,55 +360,58 @@ class Cart implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Apply shopping cart condition to cart.
+     * Attempt to apply shopping cart condition of the suplied type to cart.
      *
-     * @param Condition $cart
-     *   Condition being applied to the cart.
+     * @param ConditionType $condition_type
+     *   Condition type being applied to the cart.
      * @param bool $validate
      *   Whether to validate the supplied cart condition before application.
      *
-     * @return Condition|false
+     * @return Condition|null
      *   Condition which was applied or false on fail.
      */
-    public function addCondition(
-        Condition $condition,
-        bool $validate = true
-    ) {
-        // Validate condition if necessary; in the case it fails validation,
-        // return `false`.
-        if ($validate && $condition->validate($this->cart)) {
-            $condition = false;
+    public function addCondition(ConditionType $condition_type, bool $validate = true): ?Condition
+    {
+        // Ensure procedure was not halted and condition passed validation.
+        if (!$validate || $condition_type->validate($this->cart)) {
+            // Create condition of type for cart.
+            $condition = Condition::make([
+                'cart_id' => $this->cart->id,
+                'type_id' => $condition_type->id,
+            ]);
+            // Dispatch 'adding condition' event and check result.
+            if ($this->fireEvent('adding_cart_condition', $condition) !== EventCodes::HALT_EXECUTION) {
+                // Associate condition with cart.
+                $this->cart->conditions->add($condition);
+            }
+        } else {
+            $condition = null;
         }
-        // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
-        // returned, prevent shopping cart condition from being added to cart.
-        if (
-            $this->fireEvent('adding', $condition) !== EventCodes::HALT_EXECUTION ||
-            $condition = false
-        ) {
-            // Associate newly created condition with cart.
-            $this->cart->conditions->add($condition);
-        }
-        // Return newly created condition.
+        // Return condition.
         return $condition;
     }
 
     /**
      * Process items in cart and add appropriate conditions.
      *
-     * @return void
+     * @return array<Condition>
      */
-    public function addConditions()
+    public function applyConditions(): array
     {
+        $conditions = [];
         // Iterate over all cart conditions, checking whether they should be
         // applied to the cart or its items.
-        Condition::all()->each(function ($condition) {
-            // Add conditions to the cart if the condition's requirements are
-            // met.
-            $this->addCondition($condition);
-            // Add conditions to items which fulfill the conditions
-            // requirements.
-            $this->items->each(fn ($item) => $item->addCondition($condition));
+        ConditionType::all()->each(function ($condition_type) use (&$conditions) {
+            // Attempt to add condition to the cart.
+            $conditions[] = $this->addCondition($condition_type);
+            // Attempt to add condition to each item in cart.
+            $conditions = array_merge(
+                $conditions,
+                $this->items->map(fn ($item) => $item->addCondition($condition_type))->all(),
+            );
         });
+
+        return $conditions;
     }
 
     /**
@@ -433,13 +439,12 @@ class Cart implements \ArrayAccess, Arrayable
         // Dispatch 'removing_items' event before proceeding; if
         // HALT_EXECUTION code is returned, prevent shopping cart from being
         // saved.
-        if ($this->fireEvent('removing_items', $this->cart, $ids) === EventCodes::HALT_EXECUTION) {
-            return;
+        if ($this->fireEvent('removing_items', $this->cart, $ids) !== EventCodes::HALT_EXECUTION) {
+            // Flag specified items for deletion.
+            $this->cart->items->find($ids)->each(fn ($item) => $item->delete = true);
+            // Dispatch 'removed_items' event.
+            $this->fireEvent('removed_items', $this->cart, $ids);
         }
-        // Flag specified items for deletion.
-        $this->cart->items->find($ids)->each(fn ($item) => $item->delete = true);
-        // Dispatch 'removed_items' event.
-        $this->fireEvent('removed_items', $this->cart, $ids);
     }
 
     /**
@@ -455,13 +460,12 @@ class Cart implements \ArrayAccess, Arrayable
         // Dispatch 'removing_conditions' event before proceeding; if
         // HALT_EXECUTION code is returned, prevent shopping cart from being
         // saved.
-        if ($this->fireEvent('removing_conditions', $this->cart, $ids) === EventCodes::HALT_EXECUTION) {
-            return;
+        if ($this->fireEvent('removing_conditions', $this->cart, $ids) !== EventCodes::HALT_EXECUTION) {
+            // Delete the condition(s) from cart (and database if stored).
+            $this->cart->conditions->find($ids)->each(fn ($condition) => $condition->delete());
+            // Dispatch 'removed_conditions' event.
+            $this->fireEvent('removed_conditions', $this->cart, $ids);
         }
-        // Delete the condition(s) from cart (and database if stored).
-        $this->cart->conditions->find($ids)->each(fn ($condition) => $condition->delete());
-        // Dispatch 'removed_conditions' event.
-        $this->fireEvent('removed_conditions', $this->cart, $ids);
     }
 
     /**
@@ -528,13 +532,12 @@ class Cart implements \ArrayAccess, Arrayable
     {
         // Dispatch 'clearing' event before proceeding; if HALT_EXECUTION code
         // is returned, prevent shopping cart from being saved.
-        if ($this->fireEvent('clearing', $this->cart, $clear_code) === EventCodes::HALT_EXECUTION) {
-            return;
+        if ($this->fireEvent('clearing', $this->cart, $clear_code) !== EventCodes::HALT_EXECUTION) {
+            // Remove all items from cart.
+            $this->cart->$clear_method();
+            // Dispatch 'cleared' event.
+            $this->fireEvent('cleared', $this->cart, $clear_code);
         }
-        // Remove all items from cart.
-        $this->cart->$clear_method();
-        // Dispatch 'cleared' event.
-        $this->fireEvent('cleared', $this->cart, $clear_code);
     }
 
     /**
@@ -655,11 +658,11 @@ class Cart implements \ArrayAccess, Arrayable
         if ($validator->fails()) {
             throw new ItemValidationException($validator->messages()->first());
         }
-        // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
-        // is returned, prevent shopping cart from being saved.
-        if ($this->fireEvent('validating', $this->cart, $item) === EventCodes::HALT_EXECUTION) {
-            return;
+        if (isset($item['attributes'])) {
+            $this->validateItemAttributes($item['attributes']);
         }
+        // Dispatch 'validating_item' event to allow for custom item validation.
+        $this->fireEvent('validating_item', $this->cart, $item);
     }
 
     /**
@@ -681,11 +684,6 @@ class Cart implements \ArrayAccess, Arrayable
         // Alert user if validation fails.
         if ($validator->fails()) {
             throw new ItemValidationException($validator->messages()->first());
-        }
-        // Dispatch 'validating' event before proceeding; if HALT_EXECUTION code
-        // is returned, prevent shopping cart from being saved.
-        if ($this->fireEvent('validating', $this->cart, $attr) === EventCodes::HALT_EXECUTION) {
-            return;
         }
     }
 

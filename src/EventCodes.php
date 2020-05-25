@@ -3,9 +3,9 @@
 namespace clayliddell\ShoppingCart;
 
 /**
- * Shopping cart event codes container.
+ * Shopping cart event codes.
  */
-class EventCodes
+interface EventCodes
 {
     /**
      * Code used to halt containing code block execution.

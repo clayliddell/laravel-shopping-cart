@@ -49,7 +49,7 @@ trait PriceTrait
             fn (Builder $q) => $q->where('name', 'discount')
         )->pluck('id')->toArray();
 
-        return $this->calculateConditions($subtotal, true, false, $discount_types);
+        return $this->calculateConditions($subtotal, true, true, $discount_types);
     }
 
     /**
@@ -62,10 +62,8 @@ trait PriceTrait
      *
      * @return float
      */
-    public function calculateSubtotal(
-        bool $withConditions = false,
-        array $types = []
-    ): float {
+    public function calculateSubtotal(bool $withConditions = false, array $types = []): float
+    {
         // Initialize cart subtotal to 0.
         $subtotal = 0;
         // Add cart item's prices to subtotal.
@@ -152,26 +150,23 @@ trait PriceTrait
         // If told to include cart conditions in the conditions total, loop
         // through all cart level conditions and add them to the cart.
         if ($include_cart_conditions) {
-            // Get all condition types of the tax category.
-            $tax_types = ConditionType::whereHas(
+            // Get all condition types not of the tax category.
+            $non_tax_types = ConditionType::whereHas(
                 'category',
-                fn (Builder $q) => $q->where('name', 'tax')
+                fn (Builder $q) => $q->where('name', '!=', 'tax')
             )->pluck('id')->toArray();
             foreach ($this->cart->conditions as $condition) {
                 // If condition types have been specified, ensure that only
                 // conditions of these condition types are added to the
                 // condition total. Otherwise, allow conditions of all types
                 // except tax conditions.
-                if (
-                    (empty($types) && !in_array($condition->type->id, $tax_types, true)) ||
-                    in_array($condition->type->id, $types, true)
-                ) {
+                if (in_array($condition->type->id, $types ?: $non_tax_types, true)) {
                     // If the condition is a percentage based condition,
                     // multiply the subtotal by the conditions percentage in
                     // order to determine the conditions values.
                     // Otherwise just add the condition's total.
                     $condition_total += $condition->type->percentage ?
-                        $subtotal * $condition->value : $condition->value;
+                        $subtotal * $condition->type->value : $condition->type->value;
                 }
             }
         }
@@ -186,11 +181,11 @@ trait PriceTrait
                     if (empty($types) || in_array($condition->type->id, $types, true)) {
                         // If the condition stacks, apply the condition for each
                         // item in the cart.
-                        $quantity = $condition->stacks ? $item->quantity : 1;
-                        $condition_value = $condition->value * $quantity;
+                        $quantity = $condition->type->stacks ? $item->quantity : 1;
+                        $condition_value = $condition->type->value * $quantity;
                         $condition_total += $condition->type->percentage ?
                             $item->sku->price * $condition_value :
-                            $condition->value;
+                            $condition_value;
                     }
                 }
             }
@@ -198,7 +193,7 @@ trait PriceTrait
         // If additional conditions are supplied, add them to the condition
         // total.
         foreach ($additional_conditions as $condition) {
-            $condition_total += $condition->value;
+            $condition_total += $condition->type->value;
         }
         return $condition_total;
     }

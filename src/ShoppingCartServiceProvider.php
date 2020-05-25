@@ -103,9 +103,7 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
         // from being saved.
         if (!config('shopping_cart.conditions_persistent', true)) {
             // Hook into cart condition model saving event.
-            Condition::saving(function () {
-                return false;
-            });
+            Condition::saving(fn ($condition) => false);
         }
     }
 

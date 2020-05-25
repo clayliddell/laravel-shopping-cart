@@ -47,6 +47,6 @@ class ConditionValidator extends CartBase
      */
     public function validate(HasConditions $cartEntity): bool
     {
-        return $this->validator($cartEntity);
+        return ($this->validator)($cartEntity);
     }
 }

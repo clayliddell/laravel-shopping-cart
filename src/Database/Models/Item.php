@@ -73,27 +73,24 @@ class Item extends CartBase implements HasConditions
      * @param bool $validate
      *   Whether to validate the supplied item condition before application.
      *
-     * @return Condition|false
-     *   Condition which was applied or false on failure.
+     * @return Condition|null
+     *   Condition which was applied or `null` on failure.
      */
-    public function addCondition(
-        Condition $condition,
-        bool $validate = true
-    ) {
-        // Validate condition if necessary; in the case it fails validation,
-        // return `false`.
-        if ($validate && !$condition->validate($this)) {
-            $condition = false;
-        }
-        // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
-        // returned, prevent shopping cart condition from being added to cart.
-        if (
-            $this->fireEvent('adding', $condition) !== EventCodes::HALT_EXECUTION ||
-            $condition = false
-        ) {
-            // Associate newly created condition with cart.
+    public function addCondition(ConditionType $condition_type, bool $validate = true): ?Condition
+    {
+        // Ensure procedure was not halted and condition passed validation.
+        if (!$validate || $condition_type->validate($this)) {
+            // Create condition for item of condition type.
+            $condition = Condition::make([
+                'item_id' => $this->id,
+                'type_id' => $condition_type->id,
+            ]);
+            // Associate condition with item.
             $this->conditions->add($condition);
+        } else {
+            $condition = null;
         }
+        // Return condition.
         return $condition;
     }
 }
