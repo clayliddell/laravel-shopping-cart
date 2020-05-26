@@ -352,7 +352,7 @@ class Cart implements \ArrayAccess, Arrayable
         // returned, prevent shopping cart item from being added to cart.
         if ($this->fireEvent('adding_item', $item) !== EventCodes::HALT_EXECUTION) {
             // Associate the newly created item with the cart.
-            $item->cart = $this->cart;
+            $item->cart()->associate($this->cart);
             $this->cart->items->add($item);
         }
         // Return newly created item.
@@ -724,6 +724,7 @@ class Cart implements \ArrayAccess, Arrayable
                     // If the item is flagged to be deleted, delete it.
                     if ($item->delete) {
                         $item->attributes->delete();
+                        $item->conditions->each->delete();
                         $item->delete();
                     // Otherwise ensure it has the right cart id set for it.
                     } else {

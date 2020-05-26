@@ -5,6 +5,7 @@ namespace clayliddell\ShoppingCart\Traits;
 use clayliddell\ShoppingCart\Database\Models\{
     Cart as CartContainer,
     ConditionType,
+    Item,
 };
 use Illuminate\Database\Eloquent\Builder;
 
@@ -143,7 +144,7 @@ trait PriceTrait
         bool $include_item_conditions = true,
         array $types = [],
         array $additional_conditions = []
-    ) {
+    ): float {
         $subtotal ??= $this->calculateSubtotal();
         // Initialize condition total to 0.
         $condition_total = 0;
@@ -181,11 +182,7 @@ trait PriceTrait
                     if (empty($types) || in_array($condition->type->id, $types, true)) {
                         // If the condition stacks, apply the condition for each
                         // item in the cart.
-                        $quantity = $condition->type->stacks ? $item->quantity : 1;
-                        $condition_value = $condition->type->value * $quantity;
-                        $condition_total += $condition->type->percentage ?
-                            $item->sku->price * $condition_value :
-                            $condition_value;
+                        $condition_total += $item->calculateConditionTotal($condition);
                     }
                 }
             }

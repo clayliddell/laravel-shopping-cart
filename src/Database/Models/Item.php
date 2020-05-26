@@ -44,6 +44,15 @@ class Item extends CartBase implements HasConditions
         'attributes',
     ];
 
+    /**
+     * Attributes and relationships to hide from serialization.
+     *
+     * @var array<string>
+     */
+    protected $hidden = [
+        'cart',
+    ];
+
     public function cart()
     {
         return $this->belongsTo(Cart::class);
@@ -92,5 +101,21 @@ class Item extends CartBase implements HasConditions
         }
         // Return condition.
         return $condition;
+    }
+
+    /**
+     * Calculate the total value of a condition if applied to this item.
+     *
+     * @param Condition $condition
+     *
+     * @return float
+     */
+    public function calculateConditionTotal(Condition $condition): float
+    {
+        $quantity = $condition->type->stacks ? $this->quantity : 1;
+        $condition_value = $condition->type->value * $quantity;
+        return $condition->type->percentage ?
+            $this->sku->price * $condition_value :
+            $condition_value;
     }
 }
