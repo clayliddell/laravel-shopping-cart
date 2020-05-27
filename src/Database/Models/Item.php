@@ -93,7 +93,7 @@ class Item extends CartBase implements HasConditions
             $condition = Condition::make([
                 'item_id' => $this->id,
                 'type_id' => $condition_type->id,
-            ]);
+            ])->load();
             // Associate condition with item.
             $this->conditions->add($condition);
         } else {

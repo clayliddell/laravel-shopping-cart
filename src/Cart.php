@@ -378,7 +378,7 @@ class Cart implements \ArrayAccess, Arrayable
             $condition = Condition::make([
                 'cart_id' => $this->cart->id,
                 'type_id' => $condition_type->id,
-            ]);
+            ])->load();
             // Dispatch 'adding condition' event and check result.
             if ($this->fireEvent('adding_cart_condition', $condition) !== EventCodes::HALT_EXECUTION) {
                 // Associate condition with cart.
