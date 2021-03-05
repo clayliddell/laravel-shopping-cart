@@ -113,6 +113,7 @@ class Cart implements Arrayable
      * Convert cart items and conditions to an array.
      *
      * @return array
+     *   Cart items and conditions grouped into two separate arrays.
      */
     public function toArray(): array
     {
@@ -368,6 +369,7 @@ class Cart implements Arrayable
      * Get the number of items in cart.
      *
      * @return integer
+     *   The number of items in cart.
      */
     public function count(): int
     {
