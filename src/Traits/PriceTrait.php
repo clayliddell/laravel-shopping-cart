@@ -16,15 +16,17 @@ trait PriceTrait
 {
     /**
      * Cart container.
-     *
-     * @var CartContainer
      */
     protected CartContainer $cart;
 
     /**
      * Calculate tax of the current shopping cart's content.
      *
+     * @param float|null $subtotal
+     *   The subtotal to use or null to re-calculate this cart's subtotal.
+     *
      * @return float
+     *   The tax total for this cart's content.
      */
     public function calculateTax(?float $subtotal = null): float
     {
@@ -40,7 +42,11 @@ trait PriceTrait
     /**
      * Calculate discount total of the current shopping cart's content.
      *
+     * @param float|null $subtotal
+     *   The subtotal to use or null to re-calculate this cart's subtotal.
+     *
      * @return float
+     *   The discount total for this cart's content.
      */
     public function calculateDiscounts(?float $subtotal = null): float
     {
@@ -54,14 +60,15 @@ trait PriceTrait
     }
 
     /**
-     * Calculate total with the specified condition types applied.
+     * Calculate subtotal of the current shopping cart's content.
      *
      * @param bool $withConditions
-     *   Whether to include conditions in subtotal.
+     *   Whether to include conditions in the subtotal.
      * @param array<int> $types
-     *   Ids of condition types to apply to total.
+     *   IDs of condition types to apply to total.
      *
      * @return float
+     *   The subtotal for this cart's content.
      */
     public function calculateSubtotal(bool $withConditions = false, array $types = []): float
     {
@@ -83,6 +90,7 @@ trait PriceTrait
      * Calculate total price of the current shopping cart's content.
      *
      * @return float
+     *   The total price for this cart's content.
      */
     public function calculateTotal(): float
     {
@@ -96,6 +104,8 @@ trait PriceTrait
      * Calculate shopping cart's totals.
      *
      * @return array<float>
+     *   The conditions, subtotal, tax, and overall total of this cart's
+     *   content.
      */
     public function calculateTotals(): array
     {
