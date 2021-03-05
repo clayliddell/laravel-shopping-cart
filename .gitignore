@@ -1,6 +1,10 @@
 # PHP
 vendor/
 
+# Composer
+# Since this is a library and not a dedicated application (see https://getcomposer.org/doc/02-libraries.md#lock-file).
+composer.lock
+
 # Node
 node_modules/
 npm-debug.log
