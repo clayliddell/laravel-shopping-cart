@@ -1,0 +1,4 @@
+exclude_patterns:
+- "config/"
+- "tests/"
+- "vendor/"
