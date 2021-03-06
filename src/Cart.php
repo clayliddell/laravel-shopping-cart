@@ -14,8 +14,8 @@ use clayliddell\ShoppingCart\Exceptions\CartSaveException;
 use clayliddell\ShoppingCart\Traits\Cart\{
     ConditionManagementTrait,
     ItemManagementTrait,
+    PriceTrait,
 };
-use clayliddell\ShoppingCart\Traits\PriceTrait;
 
 /**
  * Shopping cart implementation.

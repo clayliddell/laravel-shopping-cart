@@ -1,6 +1,6 @@
 <?php
 
-namespace clayliddell\ShoppingCart\Traits;
+namespace clayliddell\ShoppingCart\Traits\Cart;
 
 use clayliddell\ShoppingCart\Database\Models\{
     Cart as CartContainer,
