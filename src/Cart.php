@@ -162,7 +162,7 @@ class Cart implements Arrayable
                 $this->doSaveCartCondition($condition);
             });
             // Save cart items.
-            $this->cart->items->each([$this, 'doSaveCartItem']);
+            $this->cart->items->each(fn ($item) => $this->doSaveCartItem($item));
         });
     }
 
