@@ -2,6 +2,8 @@
 
 namespace clayliddell\ShoppingCart\Traits\Cart;
 
+use Illuminate\Events\Dispatcher;
+
 use clayliddell\ShoppingCart\EventCodes;
 use clayliddell\ShoppingCart\Database\Models\{
     Cart as CartContainer,
@@ -21,27 +23,9 @@ trait ItemManagementTrait
     protected CartContainer $cart;
 
     /**
-     * Handle triggered events using Dispatcher provided.
-     *
-     * @param string $event
-     *   Name of event being dispatched.
-     * @param array $payload
-     *   Optional values to be dispatched with the event.
-     *
-     * @return array|null
-     *   Values returned from event listeners.
+     * Event Dispatcher.
      */
-    abstract protected function fireEvent(string $eventName, ...$payload): ?array;
-
-    /**
-     * Get shopping cart session.
-     */
-    abstract public function getInstance(): string;
-
-    /**
-     * Get shopping cart session.
-     */
-    abstract public function getSession(): string;
+    protected Dispatcher $events;
 
     /**
      * Check whether shopping cart has items with provided item IDs.
@@ -88,7 +72,6 @@ trait ItemManagementTrait
     {
         // Validate shopping cart item properties.
         $this->validateItem([
-            'session'    => $this->getSession(),
             'cart_id'    => $this->cart->id,
             'sku_id'     => $sku_id,
             'quantity'   => $quantity,
@@ -101,7 +84,7 @@ trait ItemManagementTrait
         $item = $this->createItem($sku_id, $quantity, $attributes);
         // Dispatch 'adding' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart item from being added to cart.
-        if ($this->fireEvent('adding_item', $item) !== EventCodes::HALT_EXECUTION) {
+        if ($this->events->dispatch('adding_item', $item) !== EventCodes::HALT_EXECUTION) {
             // Associate the newly created item with the cart.
             $item->cart()->associate($this->cart);
             $this->cart->items->add($item);
@@ -121,11 +104,11 @@ trait ItemManagementTrait
         // Dispatch 'removing_items' event before proceeding; if
         // HALT_EXECUTION code is returned, prevent shopping cart from being
         // saved.
-        if ($this->fireEvent('removing_items', $this->cart, $ids) !== EventCodes::HALT_EXECUTION) {
+        if ($this->events->dispatch('removing_items', [$this->cart, $ids]) !== EventCodes::HALT_EXECUTION) {
             // Flag specified items for deletion.
             $this->cart->items->find($ids)->each(fn ($item) => $item->delete = true);
             // Dispatch 'removed_items' event.
-            $this->fireEvent('removed_items', $this->cart, $ids);
+            $this->events->dispatch('removed_items', [$this->cart, $ids]);
         }
     }
 
@@ -146,18 +129,12 @@ trait ItemManagementTrait
      *   Item quantity.
      * @param array|null $attr
      *   Item attributes.
-     * @param string|null $session
-     *   Session ID.
      *
      * @return Item
      *   Newly created item.
      */
-    protected function createItem(
-        int $sku_id,
-        int $quantity,
-        ?array $attr,
-        ?string $session = null
-    ): Item {
+    protected function createItem(int $sku_id, int $quantity, ?array $attr): Item
+    {
         // Retrieve fully qualified path to item attributes model.
         $item_attr_model = config('shopping_cart.cart_item_attributes_model', '\App\ItemAttributes');
         // Make and eager load item attributes model.
@@ -165,7 +142,6 @@ trait ItemManagementTrait
         // Create an item using the provided details.
         $item = Item::make([
             'cart_id'       => $this->cart->id,
-            'session'       => $session ?? $this->getSession(),
             'sku_id'        => $sku_id,
             'quantity'      => $quantity,
         ])->load();

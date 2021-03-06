@@ -2,6 +2,8 @@
 
 namespace clayliddell\ShoppingCart\Traits\Cart;
 
+use Illuminate\Events\Dispatcher;
+
 use clayliddell\ShoppingCart\EventCodes;
 use clayliddell\ShoppingCart\Database\Models\{
     Cart as CartContainer,
@@ -20,17 +22,9 @@ trait ConditionManagementTrait
     protected CartContainer $cart;
 
     /**
-     * Handle triggered events using Dispatcher provided.
-     *
-     * @param string $event
-     *   Name of event being dispatched.
-     * @param array $payload
-     *   Optional values to be dispatched with the event.
-     *
-     * @return array|null
-     *   Values returned from event listeners.
+     * Event Dispatcher.
      */
-    abstract protected function fireEvent(string $eventName, ...$payload): ?array;
+    protected Dispatcher $events;
 
     /**
      * Check whether this shopping cart has conditions with the provided names.
@@ -71,7 +65,7 @@ trait ConditionManagementTrait
      * @return Condition|null
      *   Condition which was applied or false on fail.
      */
-    protected function addCondition(ConditionType $condition_type, bool $validate = true): ?Condition
+    public function addCondition(ConditionType $condition_type, bool $validate = true): ?Condition
     {
         // Ensure procedure was not halted and condition passed validation.
         if (!$validate || $condition_type->validate($this->cart)) {
@@ -81,7 +75,7 @@ trait ConditionManagementTrait
                 'type_id' => $condition_type->id,
             ])->load();
             // Dispatch 'adding condition' event and check result.
-            if ($this->fireEvent('adding_cart_condition', $condition) !== EventCodes::HALT_EXECUTION) {
+            if ($this->events->dispatch('adding_cart_condition', $condition) !== EventCodes::HALT_EXECUTION) {
                 // Associate condition with cart.
                 $this->cart->conditions->add($condition);
             }
@@ -103,11 +97,11 @@ trait ConditionManagementTrait
         // Dispatch 'removing_conditions' event before proceeding; if
         // HALT_EXECUTION code is returned, prevent shopping cart from being
         // saved.
-        if ($this->fireEvent('removing_conditions', $this->cart, $ids) !== EventCodes::HALT_EXECUTION) {
+        if ($this->events->dispatch('removing_conditions', [$this->cart, $ids]) !== EventCodes::HALT_EXECUTION) {
             // Delete the condition(s) from cart (and database if stored).
             $this->cart->conditions->find($ids)->each(fn ($condition) => $condition->delete());
             // Dispatch 'removed_conditions' event.
-            $this->fireEvent('removed_conditions', $this->cart, $ids);
+            $this->events->dispatch('removed_conditions', [$this->cart, $ids]);
         }
     }
 

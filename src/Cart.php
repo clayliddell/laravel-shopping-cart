@@ -59,17 +59,17 @@ class Cart implements Arrayable
         string $instance,
         string $session,
         Dispatcher $events,
-        bool $save_on_destruct = true
+        bool $save_on_destruct
     ) {
         // Initialize cart object.
         $this->events = $events;
         $this->saveOnDestruct = $save_on_destruct;
         $this->cart = CartContainer::firstOrNew([
             'instance' => $instance,
-            'session'  => $session
+            'session'  => $session,
         ]);
         // Dispatch 'constructed' event.
-        $this->fireEvent('constructed', $this);
+        $this->events->dispatch('constructed', $this);
     }
 
     /**
@@ -81,43 +81,6 @@ class Cart implements Arrayable
         if ($this->saveOnDestruct) {
             $this->cart->save();
         }
-    }
-
-    /**
-     * Retrieve new cart instance with supplied instance and session names.
-     *
-     * @param string $instance
-     *   New cart instance name.
-     * @param string|null $session
-     *   New cart session name.
-     *
-     * @return Cart
-     *   New cart instance.
-     */
-    public function instance(string $instance, string $session = null): Cart
-    {
-        return new self(
-            $instance,
-            $session ?? $this->getSession(),
-            $this->events,
-            $this->saveOnDestruct
-        );
-    }
-
-    /**
-     * Get shopping cart session name.
-     */
-    public function getSession(): string
-    {
-        return $this->cart->session;
-    }
-
-    /**
-     * Get shopping cart instance name.
-     */
-    public function getInstance(): string
-    {
-        return $this->cart->instance;
     }
 
     /**
@@ -152,7 +115,7 @@ class Cart implements Arrayable
     {
         // Dispatch 'saving' event before proceeding; if HALT_EXECUTION code is
         // returned, prevent shopping cart from being saved.
-        if ($this->fireEvent('saving', $this->cart) !== EventCodes::HALT_EXECUTION) {
+        if ($this->events->dispatch('saving', $this->cart) !== EventCodes::HALT_EXECUTION) {
             try {
                 $this->doSave();
             } catch (\Exception $original_exception) {
@@ -161,7 +124,7 @@ class Cart implements Arrayable
             }
 
             // Dispatch 'saved' event.
-            $this->fireEvent('saved', $this->cart);
+            $this->events->dispatch('saved', $this->cart);
         }
     }
 
@@ -241,7 +204,7 @@ class Cart implements Arrayable
      */
     public function clear(): void
     {
-        $this->clearHelper(__FUNCTION__, EventCodes::CLEARING_CART);
+        $this->cart->clear();
     }
 
     /**
@@ -249,7 +212,7 @@ class Cart implements Arrayable
      */
     public function clearItems(): void
     {
-        $this->clearHelper(__FUNCTION__, EventCodes::CLEARING_ITEMS);
+        $this->cart->clearItems();
     }
 
     /**
@@ -257,7 +220,7 @@ class Cart implements Arrayable
      */
     public function clearItemConditions(): void
     {
-        $this->clearHelper(__FUNCTION__, EventCodes::CLEARING_ITEM_CONDITIONS);
+        $this->cart->clearItemConditions();
     }
 
     /**
@@ -265,54 +228,7 @@ class Cart implements Arrayable
      */
     public function clearCartConditions(): void
     {
-        $this->clearHelper(__FUNCTION__, EventCodes::CLEARING_CART_CONDITIONS);
-    }
-
-    /**
-     * Handle all shopping cart clearing methods.
-     *
-     * @param string $clear_method
-     *   CartContainer class clear method to be used.
-     * @param int $clear_code
-     *   Clear code used to signify what is being cleared from cart.
-     */
-    protected function clearHelper(string $clear_method, int $clear_code): void
-    {
-        // Dispatch 'clearing' event before proceeding; if HALT_EXECUTION code
-        // is returned, prevent shopping cart from being saved.
-        if ($this->fireEvent('clearing', $this->cart, $clear_code) !== EventCodes::HALT_EXECUTION) {
-            // Remove all items from cart.
-            $this->cart->{$clear_method}();
-            // Dispatch 'cleared' event.
-            $this->fireEvent('cleared', $this->cart, $clear_code);
-        }
-    }
-
-    /**
-     * Handle triggered events using Dispatcher provided.
-     *
-     * @param string $event
-     *   Name of event being dispatched.
-     * @param array $payload
-     *   Optional values to be dispatched with the event.
-     *
-     * @return array|null
-     *   Values returned from event listeners.
-     */
-    protected function fireEvent(string $event, ...$payload): ?array
-    {
-        return $this->events->dispatch($event, $payload);
-    }
-
-    /**
-     * Convert cart items and conditions into an array.
-     */
-    public function toArray(): array
-    {
-        return [
-            'items' => $this->cart->items->toArray(),
-            'conditions' => $this->cart->conditions->toArray(),
-        ];
+        $this->cart->clearCartConditions();
     }
 
     /**
@@ -326,6 +242,17 @@ class Cart implements Arrayable
      */
     public function __get($prop)
     {
-        return $this->cart->$prop;
+        return $this->cart->{$prop};
+    }
+
+    /**
+     * Convert cart items and conditions into an array.
+     */
+    public function toArray(): array
+    {
+        return [
+            'items' => $this->cart->items->toArray(),
+            'conditions' => $this->cart->conditions->toArray(),
+        ];
     }
 }

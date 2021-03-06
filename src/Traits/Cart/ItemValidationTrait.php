@@ -2,6 +2,8 @@
 
 namespace clayliddell\ShoppingCart\Traits\Cart;
 
+use Illuminate\Events\Dispatcher;
+
 use clayliddell\ShoppingCart\Database\Models\{
     Cart as CartContainer,
     Item,
@@ -20,17 +22,9 @@ trait ItemValidationTrait
     protected CartContainer $cart;
 
     /**
-     * Handle triggered events using Dispatcher provided.
-     *
-     * @param string $event
-     *   Name of event being dispatched.
-     * @param array $payload
-     *   Optional values to be dispatched with the event.
-     *
-     * @return array|null
-     *   Values returned from event listeners.
+     * Event Dispatcher.
      */
-    abstract protected function fireEvent(string $eventName, ...$payload): ?array;
+    protected Dispatcher $events;
 
     /**
      * Validate item properties.
@@ -53,7 +47,7 @@ trait ItemValidationTrait
             $this->validateItemAttributes($item['attributes']);
         }
         // Dispatch 'validating_item' event to allow for custom item validation.
-        $this->fireEvent('validating_item', $this->cart, $item);
+        $this->events->dispatch('validating_item', [$this->cart, $item]);
     }
 
     /**
