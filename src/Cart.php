@@ -84,6 +84,27 @@ class Cart implements Arrayable
     }
 
     /**
+     * Retrieve new cart instance with supplied instance and session names.
+     *
+     * @param string $instance
+     *   New cart instance name.
+     * @param string|null $session
+     *   New cart session name.
+     *
+     * @return Cart
+     *   New cart instance.
+     */
+    public function instance(string $instance, string $session = null): Cart
+    {
+        return new self(
+            $instance,
+            $session ?? $this->getSession(),
+            $this->events,
+            $this->saveOnDestruct
+        );
+    }
+
+    /**
      * Get shopping cart session name.
      */
     public function getSession(): string
