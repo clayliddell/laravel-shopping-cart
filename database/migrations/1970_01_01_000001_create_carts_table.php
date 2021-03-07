@@ -1,10 +1,10 @@
 <?php
 
-use clayliddell\ShoppingCart\Database\Migrations\CartMigration;
+use clayliddell\ShoppingCart\Database\Migrations\CartMigrationBase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCartsTable extends CartMigration
+class CreateCartsTable extends CartMigrationBase
 {
     /**
      * Run the migrations.

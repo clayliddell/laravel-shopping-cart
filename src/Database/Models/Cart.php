@@ -2,7 +2,7 @@
 
 namespace clayliddell\ShoppingCart\Database\Models;
 
-use clayliddell\ShoppingCart\Database\Interfaces\HasConditions;
+use clayliddell\ShoppingCart\Interfaces\Database\HasConditions;
 
 class Cart extends CartBase implements HasConditions
 {

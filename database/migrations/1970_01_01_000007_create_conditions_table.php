@@ -1,10 +1,10 @@
 <?php
 
-use clayliddell\ShoppingCart\Database\Migrations\CartMigration;
+use clayliddell\ShoppingCart\Database\Migrations\CartMigrationBase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateConditionsTable extends CartMigration
+class CreateConditionsTable extends CartMigrationBase
 {
     /**
      * Run the migrations.

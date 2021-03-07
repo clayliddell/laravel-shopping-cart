@@ -8,6 +8,7 @@ use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Events\Dispatcher;
 
 use clayliddell\ShoppingCart\Database\Models\Cart as CartContainer;
+use clayliddell\ShoppingCart\Interfaces\CartInterface;
 use clayliddell\ShoppingCart\Traits\Cart\{
     ContentManagementTrait,
     PriceTrait,
@@ -16,7 +17,7 @@ use clayliddell\ShoppingCart\Traits\Cart\{
 /**
  * Shopping cart implementation.
  */
-class Cart implements Arrayable
+class Cart implements Arrayable, CartInterface
 {
     use ContentManagementTrait;
     use PriceTrait;

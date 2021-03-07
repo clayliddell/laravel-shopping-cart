@@ -30,9 +30,10 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
     protected string $base_database_path;
 
     /**
-     * Create a new service provider instance.
+     * Creates a new service provider instance.
      *
      * @param Application $app
+     *   The application instance.
      *
      * @return void
      */
@@ -175,9 +176,7 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
     }
 
     /**
-     * Get the services provided by the provider.
-     *
-     * @return array
+     * {@inheritDoc}
      */
     public function provides(): array
     {

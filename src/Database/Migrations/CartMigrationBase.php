@@ -4,7 +4,7 @@ namespace clayliddell\ShoppingCart\Database\Migrations;
 
 use Illuminate\Database\Migrations\Migration;
 
-class CartMigration extends Migration
+abstract class CartMigrationBase extends Migration
 {
     /**
      * The name of the database connection to use.
