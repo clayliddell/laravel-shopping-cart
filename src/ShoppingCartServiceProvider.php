@@ -53,7 +53,7 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
     public function register(): void
     {
         // Merge default config with user provided config file.
-        $this->mergeConfigFrom(__DIR__ . '/../config/config.php', 'shopping_cart');
+        $this->mergeConfigFrom("{$this->project_path}/config/config.php", 'shopping_cart');
         // Initialize cart singleton.
         $this->app->singleton(Cart::class, function ($app) {
             // Retrieve event dispatcher class from config for handling events.
@@ -93,7 +93,7 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
         $this->publishSeeders();
 
         // Load cart database migrations.
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom("{$this->project_path}/database/migrations");
 
         // If conditions_persistent is set to false, prevent cart conditions
         // from being saved.
@@ -111,10 +111,10 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
     protected function publishConfig(): void
     {
         // Define base config path for module.
-        $config_path = "$this->project_path/config";
+        $config_path = "{$this->project_path}/config";
         // Publish default config file to to laravel config directory.
         $this->publishes([
-            "$config_path/config.php" => config_path('shopping_cart.php'),
+            "{$config_path}/config.php" => config_path('shopping_cart.php'),
         ], 'config');
     }
 
