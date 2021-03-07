@@ -3,11 +3,12 @@
 namespace clayliddell\ShoppingCart;
 
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 
 use clayliddell\ShoppingCart\Database\Models\Condition;
+use clayliddell\ShoppingCart\Interfaces\CartInterface;
 
 /**
  * Service provider for shopping cart package.
@@ -54,29 +55,10 @@ class ShoppingCartServiceProvider extends BaseServiceProvider
     {
         // Merge default config with user provided config file.
         $this->mergeConfigFrom("{$this->project_path}/config/config.php", 'shopping_cart');
-        // Initialize cart singleton.
-        $this->app->singleton(Cart::class, function ($app) {
-            // Retrieve event dispatcher class from config for handling events.
-            $events_class = config('shopping_cart.events');
-            // Initialize instance of events class.
-            $events = $events_class ? new $events_class() : $app['events'];
-            // Retrieve instance name for identifying dispatched events.
-            $instance = config('shopping_cart.default_instance') ?? 'cart';
-            // Determine default cart session identifier. This can be overridden
-            // using the Cart::instance function.
-            // If "Use user id for session" is set to `true` in shopping cart
-            // config, then the user_id of the current user will be used for the
-            // default session.
-            if (config('shopping_cart.use_user_id_for_session')) {
-                $session = Auth::id();
-            }
-            $session ??= config('shopping_cart.default_session', 'C97ROP6UDdemJu8M');
 
-            $save_on_destruct = config('shopping_cart.save_on_destruct', true);
-
-            // Create shopping cart instance.
-            return new Cart($instance, $session, $events, $save_on_destruct);
-        });
+        // Bind the cart interface to the cart implementation for dependency
+        // injection.
+        $this->app->bind(CartInterface::class, Cart::class);
     }
 
     /**

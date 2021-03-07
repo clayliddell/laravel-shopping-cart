@@ -22,6 +22,11 @@ trait ItemValidationTrait
     protected CartContainer $cart;
 
     /**
+     * Module config.
+     */
+    protected array $config;
+
+    /**
      * Event Dispatcher.
      */
     protected Dispatcher $events;
@@ -62,7 +67,7 @@ trait ItemValidationTrait
     protected function validateItemAttributes(array $attr): void
     {
         // Retrieve fully qualified path to item attributes model.
-        $item_attr_model = config('shopping_cart.cart_item_attributes_model', '\App\ItemAttributes');
+        $item_attr_model = $this->config['cart_item_attributes_model'];
         // Validate shopping cart item properties.
         $validator = CartValidator::make($attr, $item_attr_model::rules());
         // Alert user if validation fails.

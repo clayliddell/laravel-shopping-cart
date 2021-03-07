@@ -23,6 +23,11 @@ trait ItemManagementTrait
     protected CartContainer $cart;
 
     /**
+     * Module config.
+     */
+    protected array $config;
+
+    /**
      * Event Dispatcher.
      */
     protected Dispatcher $events;
@@ -136,7 +141,7 @@ trait ItemManagementTrait
     protected function createItem(int $sku_id, int $quantity, ?array $attr): Item
     {
         // Retrieve fully qualified path to item attributes model.
-        $item_attr_model = config('shopping_cart.cart_item_attributes_model', '\App\ItemAttributes');
+        $item_attr_model = $this->config['cart_item_attributes_model'];
         // Make and eager load item attributes model.
         $attributes = $attr ? $item_attr_model::make($attr)->load() : null;
         // Create an item using the provided details.

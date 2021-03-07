@@ -2,7 +2,9 @@
 
 namespace clayliddell\ShoppingCart;
 
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Events\Dispatcher;
 
 use clayliddell\ShoppingCart\Database\Models\Cart as CartContainer;
@@ -20,14 +22,9 @@ class Cart implements Arrayable
     use PriceTrait;
 
     /**
-     * Whether to save the cart automatically on destruct.
+     * Laravel Auth factory.
      */
-    protected bool $saveOnDestruct;
-
-    /**
-     * Event Dispatcher.
-     */
-    protected Dispatcher $events;
+    protected AuthFactory $auth;
 
     /**
      * Cart container.
@@ -35,29 +32,60 @@ class Cart implements Arrayable
     protected CartContainer $cart;
 
     /**
+     * Module config.
+     */
+    protected array $config;
+
+    /**
+     * Laravel event dispatcher.
+     */
+    protected Dispatcher $events;
+
+    /**
      * Creates a Cart object.
      *
-     * @param string $instance
-     *   Cart instance name.
-     * @param string $session
-     *   Cart session name.
+     * @param AuthFactory $auth
+     *   Laravel auth factory.
      * @param Dispatcher $events
-     *   Event dispatcher.
-     * @param bool $save_on_destruct
-     *   Whether to save items in cart upon destruct.
+     *   Laravel event dispatcher.
+     * @param ConfigRepository $config
+     *   Laravel config repository.
+     * @param string|null $session
+     *   Cart session name.
+     * @param string|null $instance
+     *   Cart instance name.
      */
     public function __construct(
-        string $instance,
-        string $session,
+        AuthFactory $auth,
         Dispatcher $events,
-        bool $save_on_destruct
+        ConfigRepository $config,
+        string $session = NULL,
+        string $instance = NULL
     ) {
-        // Initialize cart object.
+        // Store the event dispatcher service.
         $this->events = $events;
-        $this->saveOnDestruct = $save_on_destruct;
+        // Retrieve shopping cart settings from config.
+        $this->config = $config->get('shopping_cart');
+
+        // If no session was specified, determine the session to use for this
+        // cart instance.
+        if (!isset($session)) {
+            // If cart user session pairing is enabled, set the session name to
+            // the current user's ID.
+            if ($this->config['use_user_id_for_session']) {
+                $session = $auth->id();
+            }
+            // Otherwise, use the default session name.
+            $session ??= $this->config['default_session'];
+        }
+        // If no instance was specified, retrieve the default instance name from
+        // config.
+        $instance ??= $this->config['default_instance'];
+
+        // Initialize cart model.
         $this->cart = CartContainer::firstOrNew([
-            'instance' => $instance,
             'session'  => $session,
+            'instance' => $instance,
         ]);
         // Dispatch 'constructed' event.
         $this->events->dispatch('constructed', $this);
@@ -69,7 +97,7 @@ class Cart implements Arrayable
     public function __destruct()
     {
         // If `$saveOnDestruct` flag is set to `true`, save the cart.
-        if ($this->saveOnDestruct) {
+        if ($this->config['save_on_destruct']) {
             $this->cart->save();
         }
     }
