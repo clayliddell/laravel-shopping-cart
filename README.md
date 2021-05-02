@@ -1,2 +1,2 @@
 # Laravel Shopping Cart
-Laravel 5 - 8 Shopping Cart Module
+Laravel 5 - 8 Shopping Cart package
